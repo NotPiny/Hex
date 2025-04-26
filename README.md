@@ -1,38 +1,12 @@
-# sv
+# Hex
+Hex is a collection of discord tools such as a components v2 builders. Hex is a work in progress and is not yet complete and may include bugs. If you find any bugs please report them in the issues section of the repository.
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+## Tools
+### Components V2 Builder
+A GUI to build [components v2](https://discord.com/developers/docs/components/reference) and export to json through either the clipboard or automatically sent to another page.
 
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
-
-```bash
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+#### Query
+The builder supports the following query parameters:
+* `min`: If present, the output will be minified.
+* `redir`: If present, the output will be redirected to the specified URL with a `json` query parameter added on.
+* `json`: If present, the builder will automatically start with the specified json. This is useful for if you want to integrate it with another page.
