@@ -1,3 +1,7 @@
+<svelte:head>
+	<title>Hex - Discord Tools</title>
+</svelte:head>
+
 <main>
 	<h1>Welcome to Hex</h1>
 	<p>Hex is a collection of tools for DaalBot and the general Discord API</p>
