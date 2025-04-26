@@ -108,9 +108,7 @@
 		{#if component.type === ComponentType.File}
 			<div class="file">
 				<img
-					src={dev
-						? `/icons/components/${ComponentType.File}.svg`
-						: `https://cdn.jsdelivr.net/gh/NotPiny/Hex/static/icons/components/${ComponentType.File}.svg`}
+					src='/icons/components/{ComponentType.File}.svg'
 					alt="File Icon"
 				/>
 				<div class="details">

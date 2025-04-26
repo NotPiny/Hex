@@ -5,9 +5,9 @@
 	import { components } from './stores';
 	import type { UnfurledMediaItem, Component as tComponent } from './types';
 	import { ComponentType } from './types';
-	import { browser, dev } from '$app/environment';
 	import { mount, onMount } from 'svelte';
 	import { page } from '$app/state';
+	import { browser } from '$app/environment';
 
 	$: baseContainer = $components[0];
 
@@ -261,9 +261,7 @@
 				<Component
 					label={typeNames[component.type]}
 					id={i}
-					icon={dev
-						? `/icons/components/${component.type}.svg`
-						: `https://cdn.jsdelivr.net/gh/NotPiny/Hex/static/icons/components/${component.type}.svg`}
+					icon='/icons/components/{component.type}.svg'
 					description={typeDescription[component.type]}
 				>
 					{#if component.type === ComponentType.TextDisplay}
@@ -297,9 +295,7 @@
 								<Component
 									label={typeNames[actionRowComponent.type]}
 									id={j}
-									icon={dev
-										? `/icons/components/${actionRowComponent.type}.svg`
-										: `https://cdn.jsdelivr.net/gh/NotPiny/Hex/static/icons/components/${actionRowComponent.type}.svg`}
+									icon='/icons/components/{actionRowComponent.type}.svg'
 									description={typeDescription[actionRowComponent.type]}
 									noDelete={true}
 									customButtons={[
@@ -430,9 +426,7 @@
 							<Component
 								label={typeNames[sectionComponent.type]}
 								id={j}
-								icon={dev
-									? `/icons/components/${sectionComponent.type}.svg`
-									: `https://cdn.jsdelivr.net/gh/NotPiny/Hex/static/icons/components/${sectionComponent.type}.svg`}
+								icon='/icons/components/{sectionComponent.type}.svg'
 								description={typeDescription[sectionComponent.type]}
 								noDelete={true}
 								customButtons={[
@@ -462,9 +456,7 @@
 						<Component
 							label={typeNames[ComponentType.Button]}
 							id={-1}
-							icon={dev
-								? `/icons/components/${ComponentType.Button}.svg`
-								: `https://cdn.jsdelivr.net/gh/NotPiny/Hex/static/icons/components/${ComponentType.Button}.svg`}
+							icon='/icons/components/{ComponentType.Button}.svg'
 							description={typeDescription[ComponentType.Button]}
 							noDelete={true}
 							customButtons={[
