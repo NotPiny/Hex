@@ -202,7 +202,7 @@
 					const targetUrl = query.get('redir');
 					const target = new URL(targetUrl ?? '');
 
-					target.searchParams.set('json', json);
+					target.searchParams.set('json', btoa(json));
 					window.location.href = target.toString();
 				} else {
 					navigator.clipboard
