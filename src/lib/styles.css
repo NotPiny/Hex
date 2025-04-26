@@ -1,0 +1,59 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #826AE3;
+    background: radial-gradient(circle, rgba(130, 106, 227, 1) 0%, rgba(29, 21, 47, 1) 100%);
+    color: #d9d9d9;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 90%;
+    height: 85%;
+
+    background-color: #19171c;
+    border-radius: 10em;
+}
+
+a {
+    color: #4589D9;
+    text-decoration: none; 
+}
+
+button {
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.2s ease-in;
+}
+
+button.colour-primary {
+    background-color: #5865F2;
+}
+
+button.colour-success {
+    background-color: #00863A;
+}
+
+button.colour-secondary {
+    background-color: #161617;
+}
+
+button.colour-danger {
+    background-color: #D22D39;
+}
+
+button.disabled {
+    filter: brightness(0.5);
+    cursor: not-allowed;
+}
