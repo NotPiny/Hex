@@ -196,7 +196,7 @@
 					json = JSON.stringify(outputObject.components, null, 2);
 				}
 
-				if (query.get('min')) json = JSON.stringify([outputObject]); // Minified JSON for length reduction
+				if (query.get('min') || query.get('redir')) json = JSON.stringify([outputObject]); // Encoding non minified json is a recipe for disaster
 
 				if (query.get('redir')) {
 					const targetUrl = query.get('redir');
