@@ -1,7 +1,7 @@
 <script>
-    import '$lib/styles.css';
+	import '$lib/styles.css';
 </script>
 
 <main>
-    <slot />
+	<slot />
 </main>
