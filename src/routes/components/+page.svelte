@@ -115,6 +115,32 @@
 			Wipe
 		</button>
 		<button
+			class="import-button"
+			on:click={() => {
+				if (!browser) return;
+
+				const jsonInput = prompt(
+					'Enter JSON to import (leave empty to cancel):',
+					JSON.stringify($components)
+				);
+
+				if (jsonInput) {
+					try {
+						const parsed = JSON.parse(jsonInput);
+						if (Array.isArray(parsed) && parsed.length > 0) {
+							components.set(parsed);
+						} else {
+							alert('Invalid JSON format. Please provide a valid array of components.');
+						}
+					} catch (e) {
+						alert('Failed to parse JSON: ' + e);
+					}
+				}
+			}}
+		>
+			Import
+		</button>
+		<button
 			class="settings-button"
 			on:click={() => {
 				showSettings = !showSettings;
