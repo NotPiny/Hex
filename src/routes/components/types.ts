@@ -23,7 +23,7 @@ export interface UnfurledMediaItem {
 
 export interface Component {
 	disabled?: boolean;
-	emoji?: string;
+	emoji?: string | null;
 	hex_id?: number;
 	type: ComponentType;
 	id: number;

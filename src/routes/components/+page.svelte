@@ -153,16 +153,22 @@
 			on:click={() => {
 				let outputObject = baseContainer;
 				// Find all "hex_id" properties and remove them
-				const removeHexId = (obj: any) => {
+				const cleanAll = (obj: any) => {
 					for (const key in obj) {
 						if (key === 'hex_id') {
 							delete obj[key];
+						} else if (key === 'id') {
+							try {
+								obj.id = obj.id.replace(/,/g, ''); // Remove commas from IDs (Strange import bug)
+							} catch (e) {
+								// Ignore errors
+							}
 						} else if (typeof obj[key] === 'object' && obj[key] !== null) {
-							removeHexId(obj[key]);
+							cleanAll(obj[key]);
 						}
 					}
 				};
-				removeHexId(outputObject);
+				cleanAll(outputObject);
 
 				const findAll = (type: ComponentType): tComponent[] => {
 					// Recursively find all components of a certain type
@@ -209,6 +215,10 @@
 						} else if (button.style != 5) {
 							if (!button.custom_id) throw new Error('Buttons must have a custom_id');
 							button.url = undefined;
+						}
+
+						if (button.emoji == '') {
+							button.emoji = null;
 						}
 					});
 				} catch (e) {
