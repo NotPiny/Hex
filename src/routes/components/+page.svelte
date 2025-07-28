@@ -1038,7 +1038,7 @@
 			background-color: #2c2d30;
 			border-radius: 15px;
 			overflow: hidden;
-			box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+			box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
 			width: 70%;
 			max-width: 300px;
 			margin-left: auto;
@@ -1139,8 +1139,8 @@
 		justify-content: space-between;
 		gap: 25px;
 		width: 100%;
-		max-width: 100vw;
-		height: 80%;
+		max-width: calc(100vw - 40px);
+		height: 80vh;
 		box-sizing: border-box;
 		overflow: hidden;
 	}
@@ -1151,7 +1151,7 @@
 		padding: 20px;
 		padding-left: 40px;
 		padding-right: 40px;
-		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+		box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
 		box-sizing: border-box;
 		overflow: hidden;
 	}
@@ -1174,7 +1174,7 @@
 		gap: 20px;
 		overflow-y: auto;
 		overflow-x: hidden;
-		max-height: 80vh;
+		max-height: calc(80vh - 40px);
 	}
 
 	.preview {
@@ -1182,6 +1182,7 @@
 		min-width: 0;
 		overflow-x: hidden;
 		overflow-y: auto;
+		max-height: calc(80vh - 40px);
 	}
 
 	.content textarea {
@@ -1193,7 +1194,7 @@
 		color: white;
 		padding: 10px;
 		border: none;
-		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+		box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
 		box-sizing: border-box;
 		resize: vertical;
 		overflow-wrap: break-word;
@@ -1353,7 +1354,7 @@
 		color: white;
 		padding: 10px;
 		border: none;
-		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+		box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
 		box-sizing: border-box;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -1362,7 +1363,6 @@
 	.button-panel {
 		display: flex;
 		justify-content: center;
-		flex-wrap: wrap;
 		max-width: 100%;
 		overflow: hidden;
 	}
@@ -1373,8 +1373,8 @@
 		padding: 10px 20px;
 		border-radius: 0;
 		cursor: pointer;
-		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
-		width: 25%;
+		box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+		width: 20%;
 		min-width: 100px;
 		font-weight: 600;
 		display: flex;
@@ -1404,7 +1404,7 @@
 			border-radius: 15px;
 			overflow: hidden;
 			background-color: #2c2d30;
-			box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+			box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
 		}
 		
 		.button-panel button {
@@ -1459,7 +1459,7 @@
 		padding: 10px;
 		margin: 10px 0;
 		border: none;
-		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+		box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
 		box-sizing: border-box;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -1475,7 +1475,7 @@
 		padding: 10px;
 		margin: 10px 0;
 		border: none;
-		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+		box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
 		box-sizing: border-box;
 		overflow: hidden;
 	}
@@ -1489,7 +1489,7 @@
 		color: white;
 		padding: 10px;
 		border: none;
-		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+		box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
 		box-sizing: border-box;
 		resize: vertical;
 		overflow-wrap: break-word;
