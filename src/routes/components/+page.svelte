@@ -183,6 +183,7 @@
 	let draggedIndex: number | null = null;
 	let dragTargetIndex: number | null = null;
 	let dropIndicatorPosition: 'above' | 'below' | null = null;
+	let mobileView: 'edit' | 'preview' | 'split' = 'edit';
 
 	function handleDragStart(e: DragEvent, index: number) {
 		draggedIndex = index;
@@ -282,7 +283,8 @@
 					});
 			}}
 		>
-			Add
+			<span class="button-icon">➕</span>
+			<span class="button-text">Add</span>
 		</button>
 		<button
 			class="wipe-button"
@@ -303,7 +305,8 @@
 				}
 			}}
 		>
-			Wipe
+			<span class="button-icon">🗑️</span>
+			<span class="button-text">Wipe</span>
 		</button>
 		<button
 			class="import-button"
@@ -330,7 +333,8 @@
 				}
 			}}
 		>
-			Import
+			<span class="button-icon">📥</span>
+			<span class="button-text">Import</span>
 		</button>
 		<button
 			class="settings-button"
@@ -338,7 +342,8 @@
 				showSettings = !showSettings;
 			}}
 		>
-			Settings
+			<span class="button-icon">⚙️</span>
+			<span class="button-text">Settings</span>
 		</button>
 		{#if !disableExport}
 		<button
@@ -430,7 +435,8 @@
 				}
 			}}
 		>
-			{query.get('redir') ? 'Submit' : 'Export'}
+			<span class="button-icon">📋</span>
+			<span class="button-text">{query.get('redir') ? 'Submit' : 'Export'}</span>
 		</button>
 		{/if}
 	</div>
@@ -470,7 +476,35 @@
 	{/if}
 </header>
 {#if !showSettings}
-	<div class="content">
+	<!-- Mobile tab navigation -->
+	<div class="mobile-tabs">
+		<button 
+			class="tab-button" 
+			class:active={mobileView === 'edit'}
+			on:click={() => mobileView = 'edit'}
+		>
+			<span class="tab-icon">✏️</span>
+			<span class="tab-text">Edit</span>
+		</button>
+		<button 
+			class="tab-button" 
+			class:active={mobileView === 'preview'}
+			on:click={() => mobileView = 'preview'}
+		>
+			<span class="tab-icon">👁️</span>
+			<span class="tab-text">Preview</span>
+		</button>
+		<button 
+			class="tab-button" 
+			class:active={mobileView === 'split'}
+			on:click={() => mobileView = 'split'}
+		>
+			<span class="tab-icon">🔄</span>
+			<span class="tab-text">Split</span>
+		</button>
+	</div>
+
+	<div class="content" class:mobile-edit={mobileView === 'edit'} class:mobile-preview={mobileView === 'preview'} class:mobile-split={mobileView === 'split'}>
 		<div class="editor"
 			role="application"
 			aria-label="Component editor with drag and drop functionality"
@@ -980,41 +1014,179 @@
 		margin-bottom: 20px;
 	}
 
+	header h1 {
+		font-size: 1.8rem;
+	}
+
+	/* Mobile responsive header */
+	@media (max-width: 768px) {
+		header h1 {
+			font-size: 1.4rem;
+		}
+	}
+
+	.mobile-tabs {
+		display: none;
+	}
+
+	/* Mobile responsive layout */
+	@media (max-width: 768px) {
+		.mobile-tabs {
+			display: flex;
+			justify-content: center;
+			margin-bottom: 15px;
+			background-color: #2c2d30;
+			border-radius: 15px;
+			overflow: hidden;
+			box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+			width: 70%;
+			max-width: 300px;
+			margin-left: auto;
+			margin-right: auto;
+		}
+
+		.tab-button {
+			flex: 1;
+			background-color: transparent;
+			color: #8e9297;
+			border: none;
+			padding: 8px 4px;
+			cursor: pointer;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 2px;
+			transition: all 0.2s ease;
+			border-right: 1px solid rgba(255, 255, 255, 0.1);
+			min-height: 40px;
+		}
+
+		.tab-button:last-child {
+			border-right: none;
+		}
+
+		.tab-button.active {
+			background-color: #5865f2;
+			color: white;
+		}
+
+		.tab-icon {
+			font-size: 14px;
+		}
+
+		.tab-text {
+			font-size: 9px;
+			font-weight: 600;
+		}
+
+		.content {
+			flex-direction: column;
+			width: 100%;
+			gap: 15px;
+			overflow-x: hidden;
+			height: calc(80vh - 45px); /* Account for smaller tabs */
+		}
+		
+		.content.mobile-edit .editor {
+			display: flex !important;
+			width: 100% !important;
+			max-height: calc(80vh - 45px) !important;
+			overflow-y: auto;
+		}
+		
+		.content.mobile-edit .preview {
+			display: none !important;
+		}
+		
+		.content.mobile-preview .editor {
+			display: none !important;
+		}
+		
+		.content.mobile-preview .preview {
+			display: block !important;
+			width: 100% !important;
+			max-height: calc(80vh - 45px);
+			overflow-y: auto;
+		}
+		
+		.content.mobile-split {
+			flex-direction: column !important;
+			gap: 2px !important;
+		}
+		
+		.content.mobile-split .editor {
+			display: flex !important;
+			width: 100% !important;
+			height: calc(40vh - 22px) !important;
+			max-height: calc(40vh - 22px) !important;
+			overflow-y: auto;
+			padding: 8px !important;
+		}
+		
+		.content.mobile-split .preview {
+			display: block !important;
+			width: 100% !important;
+			height: calc(40vh - 22px) !important;
+			max-height: calc(40vh - 22px);
+			overflow-y: auto;
+			padding: 8px !important;
+		}
+	}
+
 	.content {
 		display: flex;
 		flex-direction: row;
 		justify-content: space-between;
-
 		gap: 25px;
-
-		width: 90%;
+		width: 100%;
+		max-width: 100vw;
 		height: 80%;
+		box-sizing: border-box;
+		overflow: hidden;
 	}
 
 	.content div {
 		border-radius: 40px;
 		background-color: #1c1d20;
-
 		padding: 20px;
 		padding-left: 40px;
 		padding-right: 40px;
 		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+		box-sizing: border-box;
+		overflow: hidden;
+	}
+
+	/* Mobile responsive padding */
+	@media (max-width: 768px) {
+		.content div {
+			border-radius: 20px;
+			padding: 15px;
+			padding-left: 20px;
+			padding-right: 20px;
+		}
 	}
 
 	.editor {
 		width: 50%;
-		float: left;
-
+		min-width: 0;
 		display: flex;
 		flex-direction: column;
 		gap: 20px;
 		overflow-y: auto;
+		overflow-x: hidden;
 		max-height: 80vh;
 	}
 
+	.preview {
+		width: 50%;
+		min-width: 0;
+		overflow-x: hidden;
+		overflow-y: auto;
+	}
+
 	.content textarea {
-		width: 95%;
-		max-width: 95%;
+		width: 100%;
+		max-width: 100%;
 		height: 100px;
 		border-radius: 20px;
 		background-color: #2c2d30;
@@ -1022,11 +1194,9 @@
 		padding: 10px;
 		border: none;
 		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
-	}
-
-	.preview {
-		width: 50%;
-		float: right;
+		box-sizing: border-box;
+		resize: vertical;
+		overflow-wrap: break-word;
 	}
 
 	.image-item {
@@ -1037,6 +1207,10 @@
 		gap: 10px;
 		margin-bottom: 10px;
 		padding: 0;
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
+		overflow: hidden;
 	}
 
 	.image-item-controls {
@@ -1050,6 +1224,7 @@
 		border-radius: 0 !important;
 		background-color: transparent !important;
 		box-shadow: none !important;
+		flex-shrink: 0;
 	}
 
 	.move-btn-styled {
@@ -1090,6 +1265,26 @@
 		box-sizing: border-box !important;
 	}
 
+	/* Mobile responsive buttons - make them bigger for touch */
+	@media (max-width: 768px) {
+		.move-btn-styled {
+			height: 20px;
+			font-size: 12px;
+			min-height: 44px; /* iOS touch target minimum */
+		}
+		
+		.delete-btn-styled {
+			height: 44px;
+			font-size: 12px;
+		}
+		
+		.image-item-controls,
+		.option-item-controls {
+			width: 80px;
+			height: 44px;
+		}
+	}
+
 	.move-btn-styled:disabled {
 		background-color: #4a4d53 !important;
 		color: #72767d;
@@ -1105,6 +1300,10 @@
 		padding: 10px;
 		background-color: rgba(44, 47, 51, 0.5);
 		border-radius: 10px;
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
+		overflow: hidden;
 	}
 
 	.option-item-controls {
@@ -1118,6 +1317,7 @@
 		border-radius: 0 !important;
 		background-color: transparent !important;
 		box-shadow: none !important;
+		flex-shrink: 0;
 	}
 
 	.option-inputs {
@@ -1125,21 +1325,28 @@
 		flex-direction: column;
 		gap: 8px;
 		flex: 1;
+		min-width: 0;
+		overflow: hidden;
 	}
 
 	.option-inputs input {
 		margin: 0;
+		width: 100%;
+		box-sizing: border-box;
 	}
 
 	.image-item img {
 		width: 50px;
 		height: 50px;
 		border-radius: 20%;
+		flex-shrink: 0;
 	}
 
 	.image-item input {
-		width: 100%;
-		max-width: 100%;
+		flex: 1;
+		min-width: 0;
+		width: auto;
+		max-width: none;
 		height: 50px;
 		border-radius: 20px;
 		background-color: #2c2d30;
@@ -1147,11 +1354,17 @@
 		padding: 10px;
 		border: none;
 		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+		box-sizing: border-box;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.button-panel {
 		display: flex;
 		justify-content: center;
+		flex-wrap: wrap;
+		max-width: 100%;
+		overflow: hidden;
 	}
 
 	.button-panel button {
@@ -1162,8 +1375,61 @@
 		cursor: pointer;
 		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
 		width: 25%;
-
+		min-width: 100px;
 		font-weight: 600;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		overflow: hidden;
+	}
+
+	.button-icon {
+		font-size: 16px;
+		display: block;
+	}
+
+	.button-text {
+		font-size: 12px;
+		display: block;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	/* Mobile responsive buttons */
+	@media (max-width: 768px) {
+		.button-panel {
+			gap: 0;
+			border-radius: 15px;
+			overflow: hidden;
+			background-color: #2c2d30;
+			box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+		}
+		
+		.button-panel button {
+			width: 20%; /* Split evenly between 5 buttons */
+			padding: 12px 4px;
+			border-radius: 0 !important;
+			margin-bottom: 0;
+			min-width: 0;
+			flex-direction: column;
+			justify-content: center;
+			border-right: 1px solid rgba(255, 255, 255, 0.1);
+			box-shadow: none;
+		}
+		
+		.button-panel button:last-child {
+			border-right: none;
+		}
+		
+		.button-icon {
+			font-size: 18px;
+		}
+		
+		.button-text {
+			display: none; /* Hide text on mobile */
+		}
 	}
 
 	.button-panel button:first-child {
@@ -1194,11 +1460,14 @@
 		margin: 10px 0;
 		border: none;
 		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+		box-sizing: border-box;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	select {
-		width: 105%;
-		max-width: 105%;
+		width: 100%;
+		max-width: 100%;
 		height: 65px;
 		border-radius: 20px;
 		background-color: #2c2d30;
@@ -1207,6 +1476,45 @@
 		margin: 10px 0;
 		border: none;
 		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+		box-sizing: border-box;
+		overflow: hidden;
+	}
+
+	textarea {
+		width: 100%;
+		max-width: 100%;
+		height: 100px;
+		border-radius: 20px;
+		background-color: #2c2d30;
+		color: white;
+		padding: 10px;
+		border: none;
+		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+		box-sizing: border-box;
+		resize: vertical;
+		overflow-wrap: break-word;
+	}
+
+	/* Mobile responsive inputs */
+	@media (max-width: 768px) {
+		input {
+			height: 45px;
+			padding: 8px;
+			margin: 8px 0;
+			font-size: 16px; /* Prevents zoom on iOS */
+		}
+		
+		select {
+			height: 50px;
+			padding: 8px;
+			margin: 8px 0;
+			font-size: 16px; /* Prevents zoom on iOS */
+		}
+		
+		textarea {
+			font-size: 16px !important; /* Prevents zoom on iOS */
+			padding: 8px;
+		}
 	}
 
 	.base-settings {

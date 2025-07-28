@@ -57,3 +57,12 @@ button.disabled {
 	filter: brightness(0.5);
 	cursor: not-allowed;
 }
+
+@media screen and (max-width: 600px) {
+	main {
+		width: 100vw;
+		height: 100%;
+		border-radius: 0;
+		padding: 0;
+	}
+}
