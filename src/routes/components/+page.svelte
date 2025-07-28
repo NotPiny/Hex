@@ -268,7 +268,7 @@
 
 <svelte:head>
 	<title>Message Component Builder - Hex</title>
-	<meta name="description" content="Build Discord message components with drag-and-drop reordering, visual color coding, and JSON export. Use Ctrl+J for quick JSON access." />
+	<meta name="description" content="Build Discord message components with drag-and-drop reordering, visual color coding, and JSON export." />
 </svelte:head>
 <header>
 	<h1 style="margin-bottom: 10px;">Message Component Builder</h1>
