@@ -1153,7 +1153,8 @@
 		padding-right: 40px;
 		box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
 		box-sizing: border-box;
-		overflow: hidden;
+		overflow-x: hidden;
+		overflow-y: auto;
 	}
 
 	/* Mobile responsive padding */
