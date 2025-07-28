@@ -11,26 +11,125 @@
 	export let description = `[${label}]`;
 	export let icon = 'https://media.piny.dev/DaalBotSquare.png';
 	export let id: number;
+	export let hex_id: number = 0;
+	export let component: any = null; // Pass the full component to access hex object
 
 	export let expanded = false;
 	export let noDelete = false;
 	export let noClose = false;
 	export let customButtons: { label: string; class: string; onClick: Function }[] = [];
+	export let showMoveButtons = true;
+	export let onDragStart: ((e: DragEvent, index: number) => void) | null = null;
+	export let onDragOver: ((e: DragEvent) => void) | null = null;
+	export let onDragLeave: ((e: DragEvent) => void) | null = null;
+	export let onDrop: ((e: DragEvent, index: number) => void) | null = null;
+	export let isDragTarget = false;
+	export let isDragging = false;
+
+	// Suppress unused export warnings - these are used in parent components
+	$: void onDragStart, onDragOver, onDragLeave, onDrop, isDragTarget, isDragging;
+
+	// Generate pastel color based on hex_id
+	function generatePastelColor(seed: number): string {
+		const pastelColors = [
+			'#FFB3BA', '#FFDFBA', '#FFFFBA', '#BFFFBA', '#BAE1FF',
+			'#FFB3FF', '#D1B3FF', '#B3FFFF', '#FFD1DC', '#E6E6FA',
+			'#F0E68C', '#DDA0DD', '#F5DEB3', '#FFC0CB', '#98FB98',
+			'#87CEEB', '#F0F8FF', '#FFEFD5', '#E0E0E0', '#FAFAD2'
+		];
+		return pastelColors[seed % pastelColors.length];
+	}
+
+	$: iconBackgroundColor = component?.hex?.color || generatePastelColor(hex_id);
+
+	function moveComponentUp() {
+		components.update((c) => {
+			const container = c[0];
+			const currentIndex = container.components.findIndex(comp => comp.hex_id === hex_id);
+			if (currentIndex > 0) {
+				// Swap with the previous component
+				[container.components[currentIndex - 1], container.components[currentIndex]] = 
+				[container.components[currentIndex], container.components[currentIndex - 1]];
+			}
+			return c;
+		});
+	}
+
+	function moveComponentDown() {
+		components.update((c) => {
+			const container = c[0];
+			const currentIndex = container.components.findIndex(comp => comp.hex_id === hex_id);
+			if (currentIndex < container.components.length - 1) {
+				// Swap with the next component
+				[container.components[currentIndex], container.components[currentIndex + 1]] = 
+				[container.components[currentIndex + 1], container.components[currentIndex]];
+			}
+			return c;
+		});
+	}
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="component" class:expanded on:click={() => (expanded = true)} id="component-{id}">
+<div 
+	class="component" 
+	class:expanded 
+	class:drag-target={isDragTarget}
+	class:dragging={isDragging}
+	draggable="true"
+	on:click={() => (expanded = true)} 
+	on:dragstart={(e) => onDragStart?.(e, id)}
+	on:dragover={(e) => {
+		e.preventDefault();
+		onDragOver?.(e);
+	}}
+	on:dragleave={(e) => onDragLeave?.(e)}
+	on:drop={(e) => {
+		e.preventDefault();
+		onDrop?.(e, id);
+	}}
+	id="component-{id}"
+>
 	<div class="summary">
 		<div class="main">
-			<img src={icon} alt="Component Icon" />
+			<img src={icon} alt="Component Icon" style="background-color: {iconBackgroundColor};" />
 			<p class="label">{label}</p>
 		</div>
-		<p class="description">{description}</p>
+		<div class="description-and-buttons">
+			<p class="description">{description}</p>
+			<!-- Move buttons positioned in top right when not expanded -->
+			{#if showMoveButtons && !expanded}
+				<div class="move-buttons-compact">
+					<button
+						class="move-btn-compact move-btn-up"
+						on:click|stopPropagation={() => moveComponentUp()}
+						disabled={baseContainer.components.findIndex(comp => comp.hex_id === hex_id) === 0}
+						>↑</button
+					>
+					<button
+						class="move-btn-compact move-btn-down"
+						on:click|stopPropagation={() => moveComponentDown()}
+						disabled={baseContainer.components.findIndex(comp => comp.hex_id === hex_id) === baseContainer.components.length - 1}
+						>↓</button
+					>
+				</div>
+			{/if}
+		</div>
 	</div>
+	
 	{#if expanded}
 		<div class="content">
 			<slot />
 			<div class="actions">
+				<!-- Move buttons for expanded view - positioned first (leftmost) -->
+				{#if showMoveButtons && expanded}
+					<button
+						class="move-component-expanded move-btn-down-expanded colour-danger"
+						on:click={() => moveComponentDown()}
+						disabled={baseContainer.components.findIndex(comp => comp.hex_id === hex_id) === baseContainer.components.length - 1}
+						>↓</button
+					>
+				{/if}
+
 				<!-- Type specific actions -->
 				{#if label == 'Media Gallery'}
 					<button
@@ -47,7 +146,7 @@
 										{
 											media: {
 												url: 'https://media.piny.dev/DaalBotSquare.png',
-												hex_id: Math.floor(Math.random() * 1000)
+												hex_id: Math.floor(Math.random() * 1000000)
 											}
 										}
 									];
@@ -113,7 +212,7 @@
 											if (component.id == id + 1) {
 												// @ts-ignore
 												component.components = component.components.map((c) => {
-													c.hex_id = Math.floor(Math.random() * 1000);
+													c.hex_id = c.hex_id || Math.floor(Math.random() * 1000000);
 													return c;
 												});
 											}
@@ -164,12 +263,10 @@
 						on:click={() => {
 							components.update((c) => {
 								baseContainer.components = baseContainer.components.filter(
-									(component) => component.id !== id + 1
+									(component) => component.hex_id !== hex_id
 								);
 								return c;
 							});
-
-							document.getElementById(`component-${id + 1}`)?.remove();
 						}}>Remove Component</button
 					>
 				{/if}
@@ -180,6 +277,16 @@
 						>{button.label}</button
 					>
 				{/each}
+
+				<!-- Move up button positioned on the right for expanded view -->
+				{#if showMoveButtons && expanded}
+					<button
+						class="move-component-expanded move-btn-up-expanded colour-success"
+						on:click={() => moveComponentUp()}
+						disabled={baseContainer.components.findIndex(comp => comp.hex_id === hex_id) === 0}
+						>↑</button
+					>
+				{/if}
 			</div>
 		</div>
 	{/if}
@@ -196,6 +303,89 @@
 		gap: 1rem;
 		padding: 20px;
 		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+		position: relative;
+	}
+
+	.move-buttons-compact {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.move-btn-compact {
+		width: 24px;
+		height: 24px;
+		border: none;
+		border-radius: 6px;
+		color: white;
+		font-size: 12px;
+		font-weight: bold;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: background-color 0.2s ease;
+	}
+
+	.move-btn-up {
+		background-color: #00863a; /* Discord success green to match colour-success */
+	}
+
+	.move-btn-up:hover:not(:disabled) {
+		background-color: #006c2e; /* Darker green for hover */
+	}
+
+	.move-btn-down {
+		background-color: #d22d39; /* Discord danger red to match colour-danger */
+	}
+
+	.move-btn-down:hover:not(:disabled) {
+		background-color: #a8232d; /* Darker red for hover */
+	}
+
+	.move-btn-compact:disabled {
+		background-color: #4a4d53;
+		color: #72767d;
+		cursor: not-allowed;
+	}
+
+	.move-component-expanded {
+		min-width: 40px;
+		height: 40px;
+		border: none;
+		border-radius: 10px;
+		color: white;
+		font-size: 16px;
+		font-weight: bold;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: background-color 0.2s ease;
+	}
+
+	.move-component-expanded:disabled {
+		background-color: #4a4d53;
+		color: #72767d;
+		cursor: not-allowed;
+	}
+
+	.drag-target {
+		border: 2px dashed #5865f2;
+		background-color: rgba(88, 101, 242, 0.1);
+	}
+
+	.component[draggable="true"] {
+		cursor: grab;
+	}
+
+	.component[draggable="true"]:active {
+		cursor: grabbing;
+	}
+
+	.component.dragging {
+		opacity: 0.6;
+		transform: rotate(2deg);
 	}
 
 	.summary {
@@ -204,8 +394,14 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 2rem;
-
 		width: 100%;
+	}
+
+	.description-and-buttons {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 1rem;
 	}
 
 	.summary .main {
@@ -220,8 +416,7 @@
 		height: 50px;
 		border-radius: 20%;
 		margin-right: 20px;
-
-		background-color: #eaddff;
+		/* Background color now set dynamically via style attribute */
 	}
 
 	.expanded {
@@ -246,5 +441,10 @@
 
 	.content {
 		width: 90%;
+	}
+
+	.move-component:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 </style>

@@ -42,6 +42,17 @@
 	}
 
 	const baseContainer = $components[0];
+
+	// Generate pastel color based on seed
+	function generatePastelColor(seed: number): string {
+		const pastelColors = [
+			'#FFB3BA', '#FFDFBA', '#FFFFBA', '#BFFFBA', '#BAE1FF',
+			'#FFB3FF', '#D1B3FF', '#B3FFFF', '#FFD1DC', '#E6E6FA',
+			'#F0E68C', '#DDA0DD', '#F5DEB3', '#FFC0CB', '#98FB98',
+			'#87CEEB', '#F0F8FF', '#FFEFD5', '#E0E0E0', '#FAFAD2'
+		];
+		return pastelColors[seed % pastelColors.length];
+	}
 </script>
 
 <div class="overlay" id="add-component">
@@ -65,9 +76,15 @@
 					const selectedType = (
 						document.querySelector('#create-component-type-selector') as HTMLSelectElement
 					).value;
+					const hexId = Math.floor(Math.random() * 1000000);
 					const newComponent: any = {
 						id: baseContainer.components.length + 1,
-						type: parseInt(selectedType)
+						type: parseInt(selectedType),
+						hex_id: hexId,
+						hex: {
+							id: hexId,
+							color: generatePastelColor(hexId)
+						}
 					};
 
 					switch (newComponent.type) {
@@ -81,27 +98,41 @@
 							newComponent.components = [];
 							break;
 						case ComponentType.Section:
+							const sectionHexId = Math.floor(Math.random() * 1000000);
+							const accessoryHexId = Math.floor(Math.random() * 1000000);
 							newComponent.components = [
 								{
 									id: 1000 + Math.floor(Math.random() * 1000),
 									type: ComponentType.TextDisplay,
-									content: 'Enter text here...'
+									content: 'Enter text here...',
+									hex_id: sectionHexId,
+									hex: {
+										id: sectionHexId,
+										color: generatePastelColor(sectionHexId)
+									}
 								}
 							];
 							newComponent.accessory = {
 								type: ComponentType.Button,
 								label: 'Button',
 								custom_id: 'custom_id',
-								disabled: false
+								disabled: false,
+								hex_id: accessoryHexId,
+								hex: {
+									id: accessoryHexId,
+									color: generatePastelColor(accessoryHexId)
+								}
 							};
 							break;
 						case ComponentType.File:
 							newComponent.file = {
-								url: 'attachment://file.txt'
+								url: 'attachment://file.txt',
+								hex_id: Math.floor(Math.random() * 1000000)
 							};
 						case ComponentType.Thumbnail:
 							newComponent.media = {
-								url: 'https://media.piny.dev/DaalBotSquare.png'
+								url: 'https://media.piny.dev/DaalBotSquare.png',
+								hex_id: Math.floor(Math.random() * 1000000)
 							};
 						default:
 							break;

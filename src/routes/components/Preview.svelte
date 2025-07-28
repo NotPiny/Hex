@@ -62,10 +62,23 @@
 				{@html marked.parse(component.content ?? 'Failed to load component content')}
 			</div>
 		{:else if component.type === ComponentType.MediaGallery}
-			<div class="media-gallery">
-				{#each component.items || [] as item}
-					<div class="media-item">
+			<div class="media-gallery" 
+				class:single={component.items?.length === 1} 
+				class:two={component.items?.length === 2} 
+				class:three={component.items?.length === 3} 
+				class:four={component.items?.length === 4}
+				class:five={component.items?.length === 5}
+				class:six={component.items?.length === 6}
+				class:seven={component.items?.length === 7}
+				class:eight={component.items?.length === 8}
+				class:nine={component.items?.length === 9}
+				class:ten-plus={component.items && component.items.length >= 10}>
+				{#each component.items || [] as item, index}
+					<div class="media-item item-{index + 1}">
 						<img src={item.media.url} alt={item.description || 'Media item'} />
+						{#if component.items && component.items.length > 10 && index === 9}
+							<div class="overlay">+{component.items.length - 10}</div>
+						{/if}
 					</div>
 				{/each}
 			</div>
@@ -142,25 +155,268 @@
 	}
 
 	.media-gallery {
-		display: flex;
-		flex-direction: row;
-		justify-content: space-between;
+		display: grid;
+		gap: 4px;
+		max-width: 520px;
+		border-radius: 8px;
+		overflow: hidden;
+		margin: 8px 0;
+	}
 
-		gap: 10px;
+	/* Single image - large display */
+	.media-gallery.single {
+		grid-template-columns: 1fr;
+		max-width: 400px;
+		max-height: 300px;
+	}
+
+	/* Two images - side by side */
+	.media-gallery.two {
+		grid-template-columns: 1fr 1fr;
+		max-height: 300px;
+	}
+
+	/* Three images - one large left, two stacked right */
+	.media-gallery.three {
+		grid-template-columns: 2fr 1fr;
+		grid-template-rows: 1fr 1fr;
+		max-height: 300px;
+	}
+
+	/* Four images - quarters (2x2 grid) */
+	.media-gallery.four {
+		grid-template-columns: 1fr 1fr;
+		grid-template-rows: 1fr 1fr;
+		max-height: 300px;
+	}
+
+	/* Five images - 2 on top, 3 on bottom */
+	.media-gallery.five {
+		grid-template-columns: 1fr 1fr 1fr;
+		grid-template-rows: 1fr 1fr;
+		max-height: 300px;
+	}
+
+	/* Six images - 2 rows of 3 */
+	.media-gallery.six {
+		grid-template-columns: 1fr 1fr 1fr;
+		grid-template-rows: 1fr 1fr;
+		max-height: 300px;
+	}
+
+	/* Seven images - 1 on top, then 2 rows of 3 */
+	.media-gallery.seven {
+		grid-template-columns: 1fr 1fr 1fr;
+		grid-template-rows: 1fr 1fr 1fr;
+		max-height: 400px;
+	}
+
+	/* Eight images - 2 on top, then 2 rows of 3 */
+	.media-gallery.eight {
+		grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+		grid-template-rows: 1fr 1fr 1fr;
+		max-height: 400px;
+	}
+
+	/* Nine images - 3x3 grid */
+	.media-gallery.nine {
+		grid-template-columns: 1fr 1fr 1fr;
+		grid-template-rows: 1fr 1fr 1fr;
+		max-height: 400px;
+	}
+
+	/* Ten+ images - 1 on top, then 3x3 grid */
+	.media-gallery.ten-plus {
+		grid-template-columns: 1fr 1fr 1fr;
+		grid-template-rows: 1fr 1fr 1fr 1fr;
+		max-height: 500px;
 	}
 
 	.media-item {
-		flex: 1;
-		min-width: 0;
+		position: relative;
 		overflow: hidden;
-		border-radius: 10px;
 		background-color: #2c2f33;
+		min-height: 100px;
+	}
+
+	/* Single image styling */
+	.media-gallery.single .media-item {
+		aspect-ratio: 16/9;
+	}
+
+	/* Three image layout */
+	.media-gallery.three .media-item.item-1 {
+		grid-row: 1 / 3;
+		grid-column: 1;
+	}
+	.media-gallery.three .media-item.item-2 {
+		grid-column: 2;
+		grid-row: 1;
+	}
+	.media-gallery.three .media-item.item-3 {
+		grid-column: 2;
+		grid-row: 2;
+	}
+
+	/* Five image layout - 2 top, 3 bottom */
+	.media-gallery.five {
+		grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+		grid-template-rows: 1fr 1fr;
+	}
+	.media-gallery.five .media-item.item-1 {
+		grid-column: 1 / 4;
+		grid-row: 1;
+	}
+	.media-gallery.five .media-item.item-2 {
+		grid-column: 4 / 7;
+		grid-row: 1;
+	}
+	.media-gallery.five .media-item.item-3 {
+		grid-column: 1 / 3;
+		grid-row: 2;
+	}
+	.media-gallery.five .media-item.item-4 {
+		grid-column: 3 / 5;
+		grid-row: 2;
+	}
+	.media-gallery.five .media-item.item-5 {
+		grid-column: 5 / 7;
+		grid-row: 2;
+	}
+
+	/* Seven image layout - 1 top, then 2 rows of 3 */
+	.media-gallery.seven .media-item.item-1 {
+		grid-column: 1 / 4;
+		grid-row: 1;
+	}
+	.media-gallery.seven .media-item.item-2 {
+		grid-column: 1;
+		grid-row: 2;
+	}
+	.media-gallery.seven .media-item.item-3 {
+		grid-column: 2;
+		grid-row: 2;
+	}
+	.media-gallery.seven .media-item.item-4 {
+		grid-column: 3;
+		grid-row: 2;
+	}
+	.media-gallery.seven .media-item.item-5 {
+		grid-column: 1;
+		grid-row: 3;
+	}
+	.media-gallery.seven .media-item.item-6 {
+		grid-column: 2;
+		grid-row: 3;
+	}
+	.media-gallery.seven .media-item.item-7 {
+		grid-column: 3;
+		grid-row: 3;
+	}
+
+	/* Eight image layout - 2 top, then 2 rows of 3 */
+	.media-gallery.eight .media-item.item-1 {
+		grid-column: 1 / 4;
+		grid-row: 1;
+	}
+	.media-gallery.eight .media-item.item-2 {
+		grid-column: 4 / 7;
+		grid-row: 1;
+	}
+	.media-gallery.eight .media-item.item-3 {
+		grid-column: 1 / 3;
+		grid-row: 2;
+	}
+	.media-gallery.eight .media-item.item-4 {
+		grid-column: 3 / 5;
+		grid-row: 2;
+	}
+	.media-gallery.eight .media-item.item-5 {
+		grid-column: 5 / 7;
+		grid-row: 2;
+	}
+	.media-gallery.eight .media-item.item-6 {
+		grid-column: 1 / 3;
+		grid-row: 3;
+	}
+	.media-gallery.eight .media-item.item-7 {
+		grid-column: 3 / 5;
+		grid-row: 3;
+	}
+	.media-gallery.eight .media-item.item-8 {
+		grid-column: 5 / 7;
+		grid-row: 3;
+	}
+
+	/* Ten+ image layout - 1 top, then 3x3 grid with overlay on last visible */
+	.media-gallery.ten-plus .media-item.item-1 {
+		grid-column: 1 / 4;
+		grid-row: 1;
+	}
+	.media-gallery.ten-plus .media-item.item-2 {
+		grid-column: 1;
+		grid-row: 2;
+	}
+	.media-gallery.ten-plus .media-item.item-3 {
+		grid-column: 2;
+		grid-row: 2;
+	}
+	.media-gallery.ten-plus .media-item.item-4 {
+		grid-column: 3;
+		grid-row: 2;
+	}
+	.media-gallery.ten-plus .media-item.item-5 {
+		grid-column: 1;
+		grid-row: 3;
+	}
+	.media-gallery.ten-plus .media-item.item-6 {
+		grid-column: 2;
+		grid-row: 3;
+	}
+	.media-gallery.ten-plus .media-item.item-7 {
+		grid-column: 3;
+		grid-row: 3;
+	}
+	.media-gallery.ten-plus .media-item.item-8 {
+		grid-column: 1;
+		grid-row: 4;
+	}
+	.media-gallery.ten-plus .media-item.item-9 {
+		grid-column: 2;
+		grid-row: 4;
+	}
+	.media-gallery.ten-plus .media-item.item-10 {
+		grid-column: 3;
+		grid-row: 4;
+	}
+
+	/* Overlay for 10+ images */
+	.overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.6);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: white;
+		font-size: 24px;
+		font-weight: bold;
 	}
 
 	.media-item img {
 		width: 100%;
-		height: auto;
-		border-radius: 10px;
+		height: 100%;
+		object-fit: cover;
+		border-radius: 0;
+		cursor: pointer;
+		transition: transform 0.2s ease;
+	}
+
+	.media-item:hover img {
+		transform: scale(1.02);
 	}
 
 	.action-row {

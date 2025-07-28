@@ -2,24 +2,45 @@ import { writable } from 'svelte/store';
 import type { Writable } from 'svelte/store';
 import type { ComponentContainer } from './types';
 
+// Generate pastel color based on seed
+function generatePastelColor(seed: number): string {
+	const pastelColors = [
+		'#FFB3BA', '#FFDFBA', '#FFFFBA', '#BFFFBA', '#BAE1FF',
+		'#FFB3FF', '#D1B3FF', '#B3FFFF', '#FFD1DC', '#E6E6FA',
+		'#F0E68C', '#DDA0DD', '#F5DEB3', '#FFC0CB', '#98FB98',
+		'#87CEEB', '#F0F8FF', '#FFEFD5', '#E0E0E0', '#FAFAD2'
+	];
+	return pastelColors[seed % pastelColors.length];
+}
+
 export const components: Writable<ComponentContainer[]> = writable([
 	{
 		type: 17,
+		hex_id: Math.floor(Math.random() * 1000000),
+		hex: {
+			id: Math.floor(Math.random() * 1000000),
+			color: generatePastelColor(Math.floor(Math.random() * 1000000))
+		},
 		accent_colour: undefined,
 		components: [
 			{
 				type: 10, // Text Display
 				id: 1,
+				hex_id: 100001,
+				hex: { id: 100001, color: generatePastelColor(100001) },
 				content:
 					'# This is a text display component\nAll the regular markdown formatting works here, including [links](https://hex.daalbot.xyz), *italics*, **bold**, and ~~strikethrough~~, for a full guide on discord markdown see [markdown-text-101.md](https://gist.github.com/matthewzring/9f7bbfd102003963f9be7dbcf7d40e51). You can also insert components such as buttons, select menus, and images almost anywhere you want.'
 			},
 			{
 				type: 12, // Media Gallery
 				id: 2,
+				hex_id: 100002,
+				hex: { id: 100002, color: generatePastelColor(100002) },
 				items: [
 					{
 						media: {
-							url: 'https://images.unsplash.com/photo-1741866987680-5e3d7f052b87?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+							url: 'https://images.unsplash.com/photo-1741866987680-5e3d7f052b87?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+							hex_id: Math.floor(Math.random() * 1000000)
 						}
 					}
 				]
@@ -27,16 +48,22 @@ export const components: Writable<ComponentContainer[]> = writable([
 			{
 				type: 10,
 				id: 3,
+				hex_id: 100003,
+				hex: { id: 100003, color: generatePastelColor(100003) },
 				content:
 					'Photo by [Mathieu Bigard](https://unsplash.com/@mathieubigard) on [Unsplash](https://unsplash.com/photos/majestic-mountains-reflect-in-the-turquoise-lake-U1o2u8UrHLc)'
 			},
 			{
 				type: 14, // Seperator
-				id: 4
+				id: 4,
+				hex_id: 100004,
+				hex: { id: 100004, color: generatePastelColor(100004) }
 			},
 			{
 				type: 10,
 				id: 5,
+				hex_id: 100005,
+				hex: { id: 100005, color: generatePastelColor(100005) },
 				content:
 					'For more info on how to use components, check out the [documentation](https://discord.com/developers/docs/components/reference)'
 			}

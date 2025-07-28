@@ -25,6 +25,10 @@ export interface Component {
 	disabled?: boolean;
 	emoji?: string | null;
 	hex_id?: number;
+	hex?: {
+		id: number;
+		color?: string;
+	};
 	type: ComponentType;
 	id: number;
 	custom_id?: string;
@@ -51,6 +55,11 @@ export interface Component {
 }
 
 export interface ComponentContainer {
+	hex_id?: number;
+	hex?: {
+		id: number;
+		color?: string;
+	};
 	accent_color?: number;
 	type: ComponentType.Container;
 	components: Component[];
