@@ -250,10 +250,24 @@
 	let validateExport = true;
 	let useFixedHeight = false; // Default to natural flow (false)
 	let settingsLoaded = false; // Flag to prevent saving during initial load
+	let isMobile = false; // Track if user is on mobile
+	
+	// Detect mobile viewport
+	function updateMobileStatus() {
+		if (browser) {
+			isMobile = window.innerWidth <= 768;
+		}
+	}
 	
 	// Load settings from localStorage
 	onMount(() => {
 		if (browser) {
+			// Initialize mobile status
+			updateMobileStatus();
+			
+			// Add resize listener to update mobile status
+			window.addEventListener('resize', updateMobileStatus);
+			
 			// Only load from localStorage if the values actually exist
 			const savedMinifyOutput = localStorage.getItem('minifyOutput');
 			const savedValidateExport = localStorage.getItem('validateExport');
@@ -270,6 +284,11 @@
 			
 			// Mark settings as loaded
 			settingsLoaded = true;
+			
+			// Cleanup resize listener
+			return () => {
+				window.removeEventListener('resize', updateMobileStatus);
+			};
 		}
 	});
 	
@@ -629,8 +648,9 @@
 				<ToggleSwitch
 					bind:checked={useFixedHeight}
 					label="Fixed Height Preview"
-					description="Enable to constrain the preview to a fixed height with scrolling. Disable for natural content flow."
+					description="Enable to constrain the preview to a fixed height with scrolling. Disable for natural content flow. (Desktop only)"
 					on:change={saveUseFixedHeight}
+					disabled={isMobile}
 				/>
 			</SettingGroup>
 

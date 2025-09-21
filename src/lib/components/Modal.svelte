@@ -106,9 +106,11 @@
 		border-radius: 16px;
 		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
 		width: 90%;
-		max-height: 80vh;
+		max-height: 90vh;
 		overflow: hidden;
 		animation: slideIn 0.3s ease-out;
+		display: flex;
+		flex-direction: column;
 	}
 
 	@keyframes slideIn {
@@ -162,7 +164,8 @@
 	.modal-content {
 		padding: 32px;
 		overflow-y: auto;
-		max-height: calc(80vh - 80px);
+		flex: 1;
+		min-height: 0;
 	}
 
 	/* Responsive Design */
@@ -170,6 +173,7 @@
 		.modal {
 			width: 95%;
 			margin: 20px;
+			max-height: 95vh;
 		}
 
 		.modal-header {
