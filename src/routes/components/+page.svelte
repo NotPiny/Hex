@@ -2,6 +2,10 @@
 	import Component from './Component.svelte';
 	import Create from './Create.svelte';
 	import Preview from './Preview.svelte';
+	import Modal from '../../lib/components/Modal.svelte';
+	import SettingGroup from '../../lib/components/SettingGroup.svelte';
+	import ColorPicker from '../../lib/components/ColorPicker.svelte';
+	import ToggleSwitch from '../../lib/components/ToggleSwitch.svelte';
 	import { components } from './stores';
 	import type { ComponentContainer, UnfurledMediaItem, Component as tComponent } from './types';
 	import { ComponentType } from './types';
@@ -37,6 +41,66 @@
 	}
 
 	$: baseContainer = $components[0];
+
+	// Function to transform Discord API format to internal format
+	function transformDiscordToInternal(discordData: any): any {
+		if (Array.isArray(discordData)) {
+			return discordData.map(item => transformDiscordToInternal(item));
+		} else if (discordData && typeof discordData === 'object') {
+			const transformed = { ...discordData };
+			
+			// Transform property names from Discord format to internal format
+			if (transformed.customId !== undefined) {
+				transformed.custom_id = transformed.customId;
+				delete transformed.customId;
+			}
+			
+			// Map disabled state (Discord API doesn't usually include disabled field if not disabled)
+			if (transformed.disabled === undefined) {
+				transformed.disabled = false; // Default to enabled
+			} else {
+				transformed.disabled = Boolean(transformed.disabled);
+			}
+			
+			// Handle style mapping - only set default if style is missing AND it's a button
+			if (transformed.type === ComponentType.Button && transformed.style === undefined) {
+				transformed.style = 2; // Default to secondary style only if missing
+			}
+			
+			// Handle emoji field
+			if (transformed.emoji === undefined) {
+				transformed.emoji = null;
+			}
+			
+			// Handle url field for link buttons
+			if (transformed.type === ComponentType.Button && transformed.style === 5 && !transformed.url) {
+				transformed.url = '';
+			}
+			
+			// Handle items array for MediaGallery (type 12)
+			if (transformed.type === 12 && transformed.items) {
+				transformed.items = transformed.items.map((item: any) => {
+					if (item.media) {
+						return {
+							media: {
+								url: item.media.url,
+								hex_id: Math.floor(Math.random() * 1000000)
+							}
+						};
+					}
+					return item;
+				});
+			}
+			
+			// Recursively transform nested components
+			if (transformed.components) {
+				transformed.components = transformed.components.map((comp: any) => transformDiscordToInternal(comp));
+			}
+			
+			return transformed;
+		}
+		return discordData;
+	}
 
 	// Function to ensure all components have hex_id and hex object
 	function ensureHexIds(obj: any): any {
@@ -150,7 +214,9 @@
 			if (json) {
 				try {
 					const parsed = JSON.parse(json);
-					const withHexIds = ensureHexIds(parsed);
+					// Transform Discord format to internal format
+					const transformed = transformDiscordToInternal(parsed);
+					const withHexIds = ensureHexIds(transformed);
 					components.set(withHexIds);
 				} catch (e) {
 					alert('Failed to parse JSON: ' + e);
@@ -180,6 +246,37 @@
 
 	let showSettings = false;
 	let useBaseContainer = true;
+	let minifyOutput = false;
+	let validateExport = true;
+	
+	// Initialize settings from query parameters
+	onMount(() => {
+		const query = page.url.searchParams;
+		if (query.get('min')) minifyOutput = true;
+		if (query.get('no-validate')) validateExport = false;
+	});
+	
+	// Settings modal handlers
+	function handleAccentColorReset() {
+		baseContainer.accent_color = undefined;
+		components.update((c) => {
+			c[0] = baseContainer;
+			return c;
+		});
+	}
+
+	function handleAccentColorChange() {
+		components.update((c) => {
+			c[0] = baseContainer;
+			return c;
+		});
+	}
+	
+	// Convert accent color for ColorPicker (number to hex string)
+	$: accentColorHex = $components[0].accent_color !== undefined 
+		? '#' + $components[0].accent_color.toString(16).padStart(6, '0')
+		: undefined;
+	
 	let draggedIndex: number | null = null;
 	let dragTargetIndex: number | null = null;
 	let dropIndicatorPosition: 'above' | 'below' | null = null;
@@ -265,12 +362,14 @@
 		dragTargetIndex = null;
 		dropIndicatorPosition = null;
 	}
+
 </script>
 
 <svelte:head>
 	<title>Message Component Builder - Hex</title>
 	<meta name="description" content="Build Discord message components with drag-and-drop reordering, visual color coding, and JSON export." />
 </svelte:head>
+
 <header>
 	<h1 style="margin-bottom: 10px;">Message Component Builder</h1>
 	<div class="button-panel">
@@ -322,7 +421,9 @@
 					try {
 						const parsed = JSON.parse(jsonInput);
 						if (Array.isArray(parsed) && parsed.length > 0) {
-							const withHexIds = ensureHexIds(parsed);
+							// Transform Discord format to internal format
+							const transformed = transformDiscordToInternal(parsed);
+							const withHexIds = ensureHexIds(transformed);
 							components.set(withHexIds);
 						} else {
 							alert('Invalid JSON format. Please provide a valid array of components.');
@@ -385,8 +486,12 @@
 						}
 					});
 				} catch (e) {
-					alert(e);
-					return;
+					if (validateExport) {
+						alert(e);
+						return;
+					} else {
+						console.warn(`Got error: ${e}, but continuing export due to no-validate flag`);
+					}
 				}
 
 				const buttons = findAll(ComponentType.Button);
@@ -405,8 +510,12 @@
 						}
 					});
 				} catch (e) {
-					alert(e);
-					return;
+					if (validateExport) {
+						alert(e);
+						return;
+					} else {
+						console.warn(`Got error: ${e}, but continuing export due to no-validate flag`);
+					}
 				}
 
 				let json = JSON.stringify([outputObject], null, 2);
@@ -415,7 +524,7 @@
 					json = JSON.stringify(outputObject.components, null, 2);
 				}
 
-				if (query.get('min') || query.get('redir')) json = JSON.stringify([outputObject]); // Encoding non minified json is a recipe for disaster
+				if (minifyOutput || query.get('redir')) json = JSON.stringify(useBaseContainer ? [outputObject] : outputObject.components); // Encoding non minified json is a recipe for disaster
 
 				if (query.get('redir')) {
 					const targetUrl = query.get('redir');
@@ -441,70 +550,89 @@
 		{/if}
 	</div>
 
+	<!-- Settings Modal -->
 	{#if showSettings}
-		<div class="base-settings">
-			<div class="base-setting-labelled">
-				<h3>Accent Colour</h3>
-				<div class="content">
-					<input
-						type="color"
-						bind:value={baseContainer.accent_color}
-						placeholder="Enter color here..."
-					/>
-					<button
-						class="colour-danger"
-						style="height: 4rem;"
-						on:click={() => {
-							baseContainer.accent_color = undefined;
+		<Modal title="Settings" on:close={() => showSettings = false}>
+			<SettingGroup>
+				<ColorPicker 
+					bind:value={accentColorHex}
+					on:change={(e) => {
+						console.log('ColorPicker change event:', e.detail);
+						const hexValue = e.detail;
+						if (hexValue) {
+							const hex = hexValue.replace('#', '');
+							const newColor = parseInt(hex, 16);
+							console.log('Set accent_color to:', newColor);
+							
+							// Update both the baseContainer and the store
+							baseContainer.accent_color = newColor;
 							components.update((c) => {
-								c[0] = baseContainer;
+								c[0].accent_color = newColor;
 								return c;
 							});
-						}}>Clear</button
-					>
-				</div>
-			</div>
+						} else {
+							console.log('Reset accent_color to undefined');
+							baseContainer.accent_color = undefined;
+							components.update((c) => {
+								c[0].accent_color = undefined;
+								return c;
+							});
+						}
+					}}
+					label="Accent Color"
+					description="Choose a custom accent color for your components"
+					on:reset={handleAccentColorReset}
+				/>
+				<ToggleSwitch
+					bind:checked={useBaseContainer}
+					label="Use Base Container"
+					description="Include a base container in the exported JSON. The container will still appear in the preview."
+				/>
+			</SettingGroup>
 
-			<div class="base-setting-labelled">
-				<h3>Use base container?</h3>
-				<p>
-					A container will still be displayed in the preview however not in the finished version
-				</p>
-				<input type="checkbox" bind:checked={useBaseContainer} />
-			</div>
-		</div>
+			<SettingGroup title="Export Options">
+				<ToggleSwitch
+					bind:checked={minifyOutput}
+					label="Minify Output"
+					description="Export JSON in compact format without indentation and whitespace."
+				/>
+				<ToggleSwitch
+					bind:checked={validateExport}
+					label="Validate on Export"
+					description="Enable validation checks when exporting. Disable to export even if there are issues."
+				/>
+			</SettingGroup>
+		</Modal>
 	{/if}
 </header>
-{#if !showSettings}
-	<!-- Mobile tab navigation -->
-	<div class="mobile-tabs">
-		<button 
-			class="tab-button" 
-			class:active={mobileView === 'edit'}
-			on:click={() => mobileView = 'edit'}
-		>
-			<span class="tab-icon">✏️</span>
-			<span class="tab-text">Edit</span>
-		</button>
-		<button 
-			class="tab-button" 
-			class:active={mobileView === 'preview'}
-			on:click={() => mobileView = 'preview'}
-		>
-			<span class="tab-icon">👁️</span>
-			<span class="tab-text">Preview</span>
-		</button>
-		<button 
-			class="tab-button" 
-			class:active={mobileView === 'split'}
-			on:click={() => mobileView = 'split'}
-		>
-			<span class="tab-icon">🔄</span>
-			<span class="tab-text">Split</span>
-		</button>
-	</div>
 
-	<div class="content" class:mobile-edit={mobileView === 'edit'} class:mobile-preview={mobileView === 'preview'} class:mobile-split={mobileView === 'split'}>
+<!-- Mobile tab navigation -->
+<div class="mobile-tabs">
+	<button 
+		class="tab-button" 
+		class:active={mobileView === 'edit'}
+		on:click={() => mobileView = 'edit'}
+	>
+		<span class="tab-icon">✏️</span>
+		<span class="tab-text">Edit</span>
+	</button>
+	<button 
+		class="tab-button" 
+		class:active={mobileView === 'preview'}
+		on:click={() => mobileView = 'preview'}
+	>
+		<span class="tab-icon">👁️</span>
+		<span class="tab-text">Preview</span>
+	</button>
+	<button 
+		class="tab-button" 
+		class:active={mobileView === 'split'}
+		on:click={() => mobileView = 'split'}
+	>
+		<span class="tab-icon">🔄</span>
+		<span class="tab-text">Split</span>
+	</button>
+</div>	<div class="content" class:mobile-edit={mobileView === 'edit'} class:mobile-preview={mobileView === 'preview'} class:mobile-split={mobileView === 'split'}>
 		<div class="editor"
 			role="application"
 			aria-label="Component editor with drag and drop functionality"
@@ -729,11 +857,11 @@
 											placeholder="Enter button label here... (required)"
 										/>
 										<select bind:value={actionRowComponent.style}>
-											<option value="1">Primary</option>
-											<option value="2">Secondary</option>
-											<option value="3">Success</option>
-											<option value="4">Danger</option>
-											<option value="5">Link</option>
+											<option value={1}>Primary</option>
+											<option value={2}>Secondary</option>
+											<option value={3}>Success</option>
+											<option value={4}>Danger</option>
+											<option value={5}>Link</option>
 										</select>
 										<select bind:value={actionRowComponent.disabled}>
 											<option value={false}>Enabled</option>
@@ -942,11 +1070,11 @@
 								placeholder="Enter button label here... (required)"
 							/>
 							<select bind:value={(component.accessory as unknown as Component).style}>
-								<option value="1">Primary</option>
-								<option value="2">Secondary</option>
-								<option value="3">Success</option>
-								<option value="4">Danger</option>
-								<option value="5">Link</option>
+								<option value={1}>Primary</option>
+								<option value={2}>Secondary</option>
+								<option value={3}>Success</option>
+								<option value={4}>Danger</option>
+								<option value={5}>Link</option>
 							</select>
 							<select bind:value={(component.accessory as unknown as Component).disabled}>
 								<option value={false}>Enabled</option>
@@ -1007,7 +1135,6 @@
 			<Preview />
 		</div>
 	</div>
-{/if}
 
 <style>
 	header {
@@ -1516,33 +1643,6 @@
 			font-size: 16px !important; /* Prevents zoom on iOS */
 			padding: 8px;
 		}
-	}
-
-	.base-settings {
-		display: flex;
-		flex-direction: column;
-		justify-content: start;
-		gap: 40px;
-	}
-
-	/* .base-setting {
-        display: flex;
-        flex-direction: row;
-        justify-content: start;
-        gap: 20px;
-    } */
-
-	.base-setting-labelled {
-		display: flex;
-		flex-direction: column;
-		justify-content: start;
-	}
-
-	.base-setting-labelled .content {
-		display: flex;
-		flex-direction: row;
-		justify-content: start;
-		gap: 20px;
 	}
 
 	.drop-indicator {

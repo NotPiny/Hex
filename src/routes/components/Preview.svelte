@@ -17,6 +17,31 @@
 		4: 'danger',
 		5: 'secondary'
 	};
+
+	// Discord markdown processor with proper newline handling and subtext support
+	function processDiscordMarkdown(content: string): string {
+		// Handle Discord's -# subtext format before markdown processing
+		let processed = content.replace(/^-# (.+)$/gm, '<span style="font-size: 0.75em; color: #adadad; display: block; margin: 4px 0;">$1</span>');
+		
+		// Handle Discord mentions and channels before markdown processing
+		// User mentions: <@123456789> -> @username
+		processed = processed.replace(/<@(\d+)>/g, '<span style="color: #5865f2; background-color: rgba(88, 101, 242, 0.1); padding: 1px 3px; border-radius: 3px; font-weight: 500; cursor: pointer;">@User</span>');
+		
+		// Role mentions: <@&123456789> -> @rolename
+		processed = processed.replace(/<@&(\d+)>/g, '<span style="color: #e67e22; background-color: rgba(230, 126, 34, 0.1); padding: 1px 3px; border-radius: 3px; font-weight: 500;">@Role</span>');
+		
+		// Channel mentions: <#123456789> -> #channel-name
+		processed = processed.replace(/<#(\d+)>/g, '<span style="color: #5865f2; background-color: rgba(88, 101, 242, 0.1); padding: 1px 3px; border-radius: 3px; font-weight: 500; cursor: pointer;">#channel</span>');
+		
+		// Process with marked, enabling line breaks for Discord-style newlines
+		const html = marked(processed, {
+			breaks: true, // This makes marked treat single newlines as <br>
+			gfm: true, // GitHub flavored markdown
+			pedantic: false // Allow more relaxed parsing
+		}) as string;
+		
+		return html;
+	}
 </script>
 
 {#snippet Button(comp: Component)}
@@ -46,7 +71,7 @@
 
 <div
 	class="message-contents"
-	style={baseContainer.accent_color ? `border-left: 5px solid ${baseContainer.accent_color};` : ''}
+	style={baseContainer.accent_color ? `border-left: 5px solid #${baseContainer.accent_color.toString(16).padStart(6, '0')};` : ''}
 >
 	<!-- Thumbnails have special positioning rules -->
 	{#if baseContainer.components.find((c) => c.type == ComponentType.Thumbnail)}
@@ -59,7 +84,7 @@
 	{#each baseContainer?.components || [] as component}
 		{#if component.type === ComponentType.TextDisplay}
 			<div class="text-display">
-				{@html marked.parse(component.content ?? 'Failed to load component content')}
+				{@html processDiscordMarkdown(component.content ?? 'Failed to load component content')}
 			</div>
 		{:else if component.type === ComponentType.MediaGallery}
 			<div class="media-gallery" 
@@ -105,7 +130,7 @@
 					{#each component.components || [] as sectionComponent}
 						{#if sectionComponent.type === ComponentType.TextDisplay}
 							<div class="text-display">
-								{@html marked.parse(sectionComponent.content ?? 'Failed to load component content')}
+								{@html processDiscordMarkdown(sectionComponent.content ?? 'Failed to load component content')}
 							</div>
 						{/if}
 					{/each}
@@ -142,6 +167,11 @@
 
 		max-height: 93%;
 		overflow-y: auto;
+	}
+
+	.text-display {
+		margin: 8px 0;
+		line-height: 1.375;
 	}
 
 	img {

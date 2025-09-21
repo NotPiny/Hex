@@ -75,9 +75,7 @@
 	class:expanded 
 	class:drag-target={isDragTarget}
 	class:dragging={isDragging}
-	draggable="true"
 	on:click={() => (expanded = true)} 
-	on:dragstart={(e) => onDragStart?.(e, id)}
 	on:dragover={(e) => {
 		e.preventDefault();
 		onDragOver?.(e);
@@ -89,7 +87,10 @@
 	}}
 	id="component-{id}"
 >
-	<div class="summary">
+	<div class="summary" 
+		draggable="true"
+		on:dragstart={(e) => onDragStart?.(e, id)}
+	>
 		<div class="main">
 			<img src={icon} alt="Component Icon" style="background-color: {iconBackgroundColor};" />
 			<p class="label">{label}</p>
@@ -117,7 +118,15 @@
 	</div>
 	
 	{#if expanded}
-		<div class="content">
+		<div class="content" 
+			on:dragstart|stopPropagation
+			on:mousedown={(e) => {
+				// Allow text selection in inputs and textareas
+				if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+					e.stopPropagation();
+				}
+			}}
+		>
 			<slot />
 			<div class="actions">
 				<!-- Move buttons for expanded view - positioned first (leftmost) -->
@@ -375,12 +384,18 @@
 		background-color: rgba(88, 101, 242, 0.1);
 	}
 
-	.component[draggable="true"] {
+	.summary[draggable="true"] {
 		cursor: grab;
 	}
 
-	.component[draggable="true"]:active {
+	.summary[draggable="true"]:active {
 		cursor: grabbing;
+	}
+
+	.summary[draggable="true"]:hover {
+		background-color: rgba(255, 255, 255, 0.05);
+		border-radius: 10px;
+		transition: background-color 0.2s ease;
 	}
 
 	.component.dragging {
@@ -395,6 +410,7 @@
 		justify-content: space-between;
 		gap: 2rem;
 		width: 100%;
+		user-select: none; /* Prevent text selection in drag handle */
 	}
 
 	.description-and-buttons {
@@ -441,6 +457,7 @@
 
 	.content {
 		width: 90%;
+		user-select: text; /* Allow text selection in content area */
 	}
 
 	.move-component:disabled {
