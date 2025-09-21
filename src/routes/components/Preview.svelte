@@ -6,6 +6,10 @@
 	import { dev } from '$app/environment';
 	import LinkIcon from '$lib/icons/link.svg';
 
+	// Props
+	export let useBaseContainer: boolean = true;
+	export let useFixedHeight: boolean = false;
+
 	// Force reactivity by explicitly subscribing to the store
 	$: baseContainer = $components[0];
 	$: components_list = $components; // Add this line to track store changes
@@ -69,8 +73,10 @@
 	</button>
 {/snippet}
 
+{#if useBaseContainer}
 <div
 	class="message-contents"
+	class:fixed-height={useFixedHeight}
 	style={baseContainer.accent_color ? `border-left: 5px solid #${baseContainer.accent_color.toString(16).padStart(6, '0')};` : ''}
 >
 	<!-- Thumbnails have special positioning rules -->
@@ -157,6 +163,84 @@
 		{/if}
 	{/each}
 </div>
+{:else}
+	<!-- Render components directly without container -->
+	{#each baseContainer?.components || [] as component}
+		{#if component.type === ComponentType.TextDisplay}
+			<div class="text-display">
+				{@html processDiscordMarkdown(component.content ?? 'Failed to load component content')}
+			</div>
+		{:else if component.type === ComponentType.MediaGallery}
+			<div class="media-gallery" 
+				class:single={component.items?.length === 1} 
+				class:two={component.items?.length === 2} 
+				class:three={component.items?.length === 3} 
+				class:four={component.items?.length === 4}
+				class:five={component.items?.length === 5}
+				class:six={component.items?.length === 6}
+				class:seven={component.items?.length === 7}
+				class:eight={component.items?.length === 8}
+				class:nine={component.items?.length === 9}
+				class:ten-plus={component.items && component.items.length >= 10}>
+				{#each component.items || [] as item, index}
+					<div class="media-item item-{index + 1}">
+						<img src={item.media.url} alt={item.description || 'Media item'} />
+						{#if component.items && component.items.length > 10 && index === 9}
+							<div class="overlay">+{component.items.length - 10}</div>
+						{/if}
+					</div>
+				{/each}
+			</div>
+		{:else if component.type === ComponentType.Seperator}
+			<div class="seperator">
+				<hr />
+			</div>
+		{:else if component.type === ComponentType.ActionRow}
+			<div class="action-row">
+				{#each component.components || [] as action}
+					{#if action.type === ComponentType.Button}
+						{@render Button(action)}
+					{:else}
+						<!-- Purely visual select menu -->
+						<select class="action-select" disabled>
+							<option value="" disabled selected>{action.placeholder || 'Select an option'}</option>
+						</select>
+					{/if}
+				{/each}
+			</div>
+		{:else if component.type === ComponentType.Section}
+			<div class="section">
+				<div class="left">
+					{#each component.components || [] as sectionComponent}
+						{#if sectionComponent.type === ComponentType.TextDisplay}
+							<div class="text-display">
+								{@html processDiscordMarkdown(sectionComponent.content ?? 'Failed to load component content')}
+							</div>
+						{/if}
+					{/each}
+				</div>
+				<div class="right">
+					{#if component.accessory?.type == ComponentType.Button}
+						{@render Button(component.accessory)}
+					{/if}
+				</div>
+			</div>
+		{/if}
+
+		{#if component.type === ComponentType.File}
+			<div class="file">
+				<img
+					src='/icons/components/{ComponentType.File}.svg'
+					alt="File Icon"
+				/>
+				<div class="details">
+					<h4>{(component.file as UnfurledMediaItem).url.replace('attachment://', '')}</h4>
+					<p>69.42KB</p>
+				</div>
+			</div>
+		{/if}
+	{/each}
+{/if}
 
 <style>
 	.message-contents {
@@ -164,8 +248,10 @@
 		border: 1px solid #2c2f33;
 		border-radius: 10px;
 		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+	}
 
-		max-height: 93%;
+	.message-contents.fixed-height {
+		max-height: calc(75vh - 80px);
 		overflow-y: auto;
 	}
 
@@ -557,5 +643,13 @@
 		width: 1rem;
 		height: 1rem;
 		margin-right: 5px;
+	}
+
+	/* Mobile responsive - always use fixed height on mobile */
+	@media (max-width: 768px) {
+		.message-contents {
+			max-height: calc(80vh - 100px);
+			overflow-y: auto;
+		}
 	}
 </style>

@@ -248,13 +248,49 @@
 	let useBaseContainer = true;
 	let minifyOutput = false;
 	let validateExport = true;
+	let useFixedHeight = false; // Default to natural flow (false)
+	let settingsLoaded = false; // Flag to prevent saving during initial load
 	
-	// Initialize settings from query parameters
+	// Load settings from localStorage
 	onMount(() => {
-		const query = page.url.searchParams;
-		if (query.get('min')) minifyOutput = true;
-		if (query.get('no-validate')) validateExport = false;
+		if (browser) {
+			// Only load from localStorage if the values actually exist
+			const savedMinifyOutput = localStorage.getItem('minifyOutput');
+			const savedValidateExport = localStorage.getItem('validateExport');
+			const savedUseFixedHeight = localStorage.getItem('useFixedHeight');
+			
+			if (savedMinifyOutput !== null) minifyOutput = savedMinifyOutput === 'true';
+			if (savedValidateExport !== null) validateExport = savedValidateExport === 'true';
+			if (savedUseFixedHeight !== null) useFixedHeight = savedUseFixedHeight === 'true';
+			
+			// Then override with query parameters if present
+			const query = page.url.searchParams;
+			if (query.get('min')) minifyOutput = true;
+			if (query.get('no-validate')) validateExport = false;
+			
+			// Mark settings as loaded
+			settingsLoaded = true;
+		}
 	});
+	
+	// Functions to save individual settings ONLY when user actually changes them
+	function saveMinifyOutput() {
+		if (browser) {
+			localStorage.setItem('minifyOutput', minifyOutput.toString());
+		}
+	}
+	
+	function saveValidateExport() {
+		if (browser) {
+			localStorage.setItem('validateExport', validateExport.toString());
+		}
+	}
+	
+	function saveUseFixedHeight() {
+		if (browser) {
+			localStorage.setItem('useFixedHeight', useFixedHeight.toString());
+		}
+	}
 	
 	// Settings modal handlers
 	function handleAccentColorReset() {
@@ -554,15 +590,19 @@
 	{#if showSettings}
 		<Modal title="Settings" on:close={() => showSettings = false}>
 			<SettingGroup>
+				<ToggleSwitch
+					bind:checked={useBaseContainer}
+					label="Use Base Container"
+					description="Include a base container in the exported JSON."
+				/>
+				{#if useBaseContainer}
 				<ColorPicker 
 					bind:value={accentColorHex}
 					on:change={(e) => {
-						console.log('ColorPicker change event:', e.detail);
 						const hexValue = e.detail;
 						if (hexValue) {
 							const hex = hexValue.replace('#', '');
 							const newColor = parseInt(hex, 16);
-							console.log('Set accent_color to:', newColor);
 							
 							// Update both the baseContainer and the store
 							baseContainer.accent_color = newColor;
@@ -571,7 +611,6 @@
 								return c;
 							});
 						} else {
-							console.log('Reset accent_color to undefined');
 							baseContainer.accent_color = undefined;
 							components.update((c) => {
 								c[0].accent_color = undefined;
@@ -583,10 +622,15 @@
 					description="Choose a custom accent color for your components"
 					on:reset={handleAccentColorReset}
 				/>
+				{/if}
+			</SettingGroup>
+
+			<SettingGroup title="Preview Options">
 				<ToggleSwitch
-					bind:checked={useBaseContainer}
-					label="Use Base Container"
-					description="Include a base container in the exported JSON. The container will still appear in the preview."
+					bind:checked={useFixedHeight}
+					label="Fixed Height Preview"
+					description="Enable to constrain the preview to a fixed height with scrolling. Disable for natural content flow."
+					on:change={saveUseFixedHeight}
 				/>
 			</SettingGroup>
 
@@ -595,11 +639,13 @@
 					bind:checked={minifyOutput}
 					label="Minify Output"
 					description="Export JSON in compact format without indentation and whitespace."
+					on:change={saveMinifyOutput}
 				/>
 				<ToggleSwitch
 					bind:checked={validateExport}
 					label="Validate on Export"
 					description="Enable validation checks when exporting. Disable to export even if there are issues."
+					on:change={saveValidateExport}
 				/>
 			</SettingGroup>
 		</Modal>
@@ -1132,13 +1178,17 @@
 			{/each}
 		</div>
 		<div class="preview">
-			<Preview />
+			<Preview {useBaseContainer} {useFixedHeight} />
 		</div>
 	</div>
 
 <style>
 	header {
 		margin-bottom: 20px;
+		max-width: 1400px;
+		margin-left: auto;
+		margin-right: auto;
+		padding: 0 20px;
 	}
 
 	header h1 {
@@ -1212,6 +1262,7 @@
 			gap: 15px;
 			overflow-x: hidden;
 			height: calc(80vh - 45px); /* Account for smaller tabs */
+			overflow: hidden;
 		}
 		
 		.content.mobile-edit .editor {
@@ -1266,10 +1317,10 @@
 		justify-content: space-between;
 		gap: 25px;
 		width: 100%;
-		max-width: calc(100vw - 40px);
-		height: 80vh;
+		max-width: 1400px;
+		margin: 0 auto 40px auto;
+		padding: 0 20px;
 		box-sizing: border-box;
-		overflow: hidden;
 	}
 
 	.content div {
@@ -1280,17 +1331,40 @@
 		padding-right: 40px;
 		box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
 		box-sizing: border-box;
-		overflow-x: hidden;
-		overflow-y: auto;
 	}
 
 	/* Mobile responsive padding */
 	@media (max-width: 768px) {
+		.content {
+			padding: 0 15px;
+			margin-bottom: 20px;
+		}
+		
 		.content div {
 			border-radius: 20px;
 			padding: 15px;
 			padding-left: 20px;
 			padding-right: 20px;
+			overflow-x: hidden;
+			overflow-y: auto;
+		}
+		
+		header {
+			padding: 0 15px;
+		}
+	}
+
+	/* Large screen adjustments */
+	@media (min-width: 1200px) {
+		.content {
+			gap: 40px;
+			margin-bottom: 60px;
+		}
+		
+		.content div {
+			padding: 30px;
+			padding-left: 50px;
+			padding-right: 50px;
 		}
 	}
 
@@ -1300,17 +1374,11 @@
 		display: flex;
 		flex-direction: column;
 		gap: 20px;
-		overflow-y: auto;
-		overflow-x: hidden;
-		max-height: calc(80vh - 40px);
 	}
 
 	.preview {
 		width: 50%;
 		min-width: 0;
-		overflow-x: hidden;
-		overflow-y: auto;
-		max-height: calc(80vh - 40px);
 	}
 
 	.content textarea {

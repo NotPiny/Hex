@@ -27,7 +27,7 @@
 	}
 
 	function handleOverlayKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+		if (event.key === 'Escape') {
 			event.preventDefault();
 			closeModal();
 		}
@@ -86,7 +86,10 @@
 		justify-content: center;
 		z-index: 1000;
 		animation: fadeIn 0.2s ease-out;
-		cursor: pointer;
+	}
+
+	.modal {
+		cursor: default;
 	}
 
 	@keyframes fadeIn {
