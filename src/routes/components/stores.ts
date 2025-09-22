@@ -29,7 +29,7 @@ export const components: Writable<ComponentContainer[]> = writable([
 				hex_id: 100001,
 				hex: { id: 100001, color: generatePastelColor(100001) },
 				content:
-					'# This is a text display component\nAll the regular markdown formatting works here, including [links](https://hex.daalbot.xyz), *italics*, **bold**, and ~~strikethrough~~, for a full guide on discord markdown see [markdown-text-101.md](https://gist.github.com/matthewzring/9f7bbfd102003963f9be7dbcf7d40e51). You can also insert components such as buttons, select menus, and images almost anywhere you want.'
+					'# This is a text display component\nAll the regular markdown formatting works here, including [links](https://hex.daalbot.xyz), *italics*, **bold**, and ~~strikethrough~~, for a full guide on discord markdown see [markdown-text-101.md](https://gist.github.com/matthewzring/9f7bbfd102003963f9be7dbcf7d40e51). You can also insert components such as buttons, select menus, and images almost anywhere you want.\n-# You can even use subtext, <@123>, <@&123>, <#123> mentions, and ||[Redacted]||'
 			},
 			{
 				type: 12, // Media Gallery

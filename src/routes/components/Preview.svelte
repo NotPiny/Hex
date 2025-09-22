@@ -36,7 +36,10 @@
 		
 		// Channel mentions: <#123456789> -> #channel-name
 		processed = processed.replace(/<#(\d+)>/g, '<span style="color: #5865f2; background-color: rgba(88, 101, 242, 0.1); padding: 1px 3px; border-radius: 3px; font-weight: 500; cursor: pointer;">#channel</span>');
-		
+
+		// Handle spoiler tags: ||content|| -> span with blacked out content
+		processed = processed.replace(/\|\|(.*?)\|\|/g, '<span style="background-color: #4e515a; color: #4e515a; border-radius: 0.3em; cursor: pointer; user-select: none;">$1</span>');
+
 		// Process with marked, enabling line breaks for Discord-style newlines
 		const html = marked(processed, {
 			breaks: true, // This makes marked treat single newlines as <br>
@@ -47,6 +50,18 @@
 		return html;
 	}
 </script>
+
+<svelte:head>
+	<style>
+		code {
+			background-color: #2b2d31;
+			padding: 2px 4px;
+			border-radius: 4px;
+			font-family: "gg mono","Source Code Pro",Consolas,"Andale Mono WT","Andale Mono","Lucida Console","Lucida Sans Typewriter","DejaVu Sans Mono","Bitstream Vera Sans Mono","Liberation Mono","Nimbus Mono L",Monaco,"Courier New",Courier,monospace;
+			font-size: .875rem;
+		}
+	</style>
+</svelte:head>
 
 {#snippet Button(comp: Component)}
 	<button

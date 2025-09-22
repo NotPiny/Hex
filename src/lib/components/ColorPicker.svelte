@@ -5,16 +5,21 @@
 	export let label: string = '';
 	export let description: string = '';
 	export let resetable: boolean = true;
+	export let disabled: boolean = false;
 
 	const dispatch = createEventDispatcher();
 
 	function handleReset() {
-		value = undefined;
-		dispatch('reset');
+		if (!disabled) {
+			value = undefined;
+			dispatch('reset');
+		}
 	}
 
 	function handleChange() {
-		dispatch('change', value);
+		if (!disabled) {
+			dispatch('change', value);
+		}
 	}
 </script>
 
@@ -36,13 +41,17 @@
 			bind:value
 			on:change={handleChange}
 			class="color-input"
+			class:disabled
 			title={label || 'Select color'}
+			{disabled}
 		/>
 		{#if resetable}
 			<button
 				class="reset-button"
+				class:disabled
 				on:click={handleReset}
 				title="Reset to default"
+				disabled={disabled}
 			>
 				Reset
 			</button>
@@ -106,6 +115,17 @@
 		transform: scale(1.05);
 	}
 
+	.color-input.disabled {
+		cursor: not-allowed;
+		opacity: 0.6;
+		border-color: #4a4d53;
+	}
+
+	.color-input.disabled:hover {
+		border-color: #4a4d53;
+		transform: none;
+	}
+
 	.reset-button {
 		background: #ed4245;
 		color: white;
@@ -121,6 +141,17 @@
 	.reset-button:hover {
 		background: #c03d40;
 		transform: translateY(-1px);
+	}
+
+	.reset-button.disabled {
+		cursor: not-allowed;
+		opacity: 0.6;
+		background: #4a4d53;
+	}
+
+	.reset-button.disabled:hover {
+		background: #4a4d53;
+		transform: none;
 	}
 
 	/* Responsive Design */

@@ -12,6 +12,7 @@
 	import { mount, onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { browser } from '$app/environment';
+	import ModalButton from '$lib/components/ModalButton.svelte';
 
 	const cleanAll = (obj: any) => {
 		for (const key in obj) {
@@ -213,7 +214,9 @@
 			const json = query.get('json');
 			if (json) {
 				try {
-					const parsed = JSON.parse(json);
+					// Decode the URI component first before parsing JSON
+					const decodedJson = decodeURIComponent(json);
+					const parsed = JSON.parse(decodedJson);
 					// Transform Discord format to internal format
 					const transformed = transformDiscordToInternal(parsed);
 					const withHexIds = ensureHexIds(transformed);
@@ -245,12 +248,19 @@
 	});
 
 	let showSettings = false;
-	let useBaseContainer = true;
+	let useBaseContainer = false;
 	let minifyOutput = false;
 	let validateExport = true;
 	let useFixedHeight = false; // Default to natural flow (false)
 	let settingsLoaded = false; // Flag to prevent saving during initial load
 	let isMobile = false; // Track if user is on mobile
+	let lockedSettings: string[] = [
+		// use_base_container
+		// accent_color
+		// fixed_height_preview
+		// minify_output
+		// validate_export
+	];
 	
 	// Detect mobile viewport
 	function updateMobileStatus() {
@@ -267,20 +277,38 @@
 			
 			// Add resize listener to update mobile status
 			window.addEventListener('resize', updateMobileStatus);
+
+			const query = page.url.searchParams;
+			const lockedSettingsQuery = query.get('lock');
+			if (lockedSettingsQuery) {
+				lockedSettings = lockedSettingsQuery.split(',').map(s => s.trim().toLowerCase());
+			}
 			
-			// Only load from localStorage if the values actually exist
+			// Only load from localStorage if the values actually exist AND not locked
 			const savedMinifyOutput = localStorage.getItem('minifyOutput');
 			const savedValidateExport = localStorage.getItem('validateExport');
 			const savedUseFixedHeight = localStorage.getItem('useFixedHeight');
 			
-			if (savedMinifyOutput !== null) minifyOutput = savedMinifyOutput === 'true';
-			if (savedValidateExport !== null) validateExport = savedValidateExport === 'true';
-			if (savedUseFixedHeight !== null) useFixedHeight = savedUseFixedHeight === 'true';
+			if (savedMinifyOutput !== null && !lockedSettings.includes('minify_output')) {
+				minifyOutput = savedMinifyOutput === 'true';
+			}
 			
-			// Then override with query parameters if present
-			const query = page.url.searchParams;
-			if (query.get('min')) minifyOutput = true;
-			if (query.get('no-validate')) validateExport = false;
+			if (savedValidateExport !== null && !lockedSettings.includes('validate_export')) {
+				validateExport = savedValidateExport === 'true';
+			}
+			
+			// if (savedUseFixedHeight !== null && !lockedSettings.includes('fixed_height_preview')) {
+			// 	useFixedHeight = savedUseFixedHeight === 'true';
+			// }
+			
+			// Then override with query parameters if present and not locked
+			if (query.get('min') && !lockedSettings.includes('minify_output')) {
+				minifyOutput = true;
+			}
+			
+			if (query.get('no-validate') && !lockedSettings.includes('validate_export')) {
+				validateExport = false;
+			}
 			
 			// Mark settings as loaded
 			settingsLoaded = true;
@@ -291,6 +319,15 @@
 			};
 		}
 	});
+	
+	// Toggle body overflow class when fixed height changes
+	$: if (browser) {
+		if (useFixedHeight) {
+			document.body.classList.add('fixed-height-preview');
+		} else {
+			document.body.classList.remove('fixed-height-preview');
+		}
+	}
 	
 	// Functions to save individual settings ONLY when user actually changes them
 	function saveMinifyOutput() {
@@ -418,6 +455,88 @@
 		dropIndicatorPosition = null;
 	}
 
+	function getExportData() {
+		let outputObject = baseContainer;
+		// Find all "hex_id" and "hex" properties and remove them
+		cleanAll(outputObject);
+
+		const findAll = (type: ComponentType): tComponent[] => {
+			// Recursively find all components of a certain type
+			const foundComponents: any[] = [];
+			const findComponents = (obj: any) => {
+				if (obj.type === type) {
+					foundComponents.push(obj);
+				}
+				if (obj.components) {
+					for (const component of obj.components) {
+						findComponents(component);
+					}
+				}
+			};
+			findComponents(outputObject);
+			return foundComponents;
+		};
+
+		const actionRows = findAll(ComponentType.ActionRow);
+
+		try {
+			actionRows.forEach((actionRow) => {
+				const children = actionRow.components ?? [];
+				if (children.length > 5) {
+					throw new Error('Action rows can only have 5 components');
+				} else if (children.length < 1) {
+					throw new Error('Action rows must have at least 1 component');
+				} else if (children.length > 1) {
+					if (children.filter((c) => c.type != 2).length > 1)
+						throw new Error('You can only have one select menu per action row');
+				}
+			});
+		} catch (e) {
+			if (validateExport) {
+				alert(e);
+				return;
+			} else {
+				console.warn(`Got error: ${e}, but continuing export due to no-validate flag`);
+			}
+		}
+
+		const buttons = findAll(ComponentType.Button);
+		try {
+			buttons.forEach((button) => {
+				if (button.style == 5) {
+					if (!button.url) throw new Error('Link buttons must have a url');
+					button.custom_id = undefined;
+				} else if (button.style != 5) {
+					if (!button.custom_id) throw new Error('Buttons must have a custom_id');
+					button.url = undefined;
+				}
+
+				if (button.emoji == '') {
+					button.emoji = null;
+				}
+			});
+		} catch (e) {
+			if (validateExport) {
+				alert(e);
+				return;
+			} else {
+				console.warn(`Got error: ${e}, but continuing export due to no-validate flag`);
+			}
+		}
+
+		let json = JSON.stringify([outputObject], null, 2);
+
+		if (!useBaseContainer) {
+			json = JSON.stringify(outputObject.components, null, 2);
+		}
+
+		if (minifyOutput || query.get('redir')) json = JSON.stringify(useBaseContainer ? [outputObject] : outputObject.components); // Encoding non minified json is a recipe for disaster
+
+		return json;
+	}
+
+	let exportModalOpen = false;
+	let exportToURLShowOptions = false;
 </script>
 
 <svelte:head>
@@ -505,98 +624,24 @@
 		<button
 			class="copy-button"
 			on:click={() => {
-				let outputObject = baseContainer;
-				// Find all "hex_id" and "hex" properties and remove them
-				cleanAll(outputObject);
+				// if (query.get('redir')) {
+				// 	const targetUrl = query.get('redir');
+				// 	const target = new URL(targetUrl ?? '');
 
-				const findAll = (type: ComponentType): tComponent[] => {
-					// Recursively find all components of a certain type
-					const foundComponents: any[] = [];
-					const findComponents = (obj: any) => {
-						if (obj.type === type) {
-							foundComponents.push(obj);
-						}
-						if (obj.components) {
-							for (const component of obj.components) {
-								findComponents(component);
-							}
-						}
-					};
-					findComponents(outputObject);
-					return foundComponents;
-				};
+				// 	target.searchParams.set('json', btoa(getExportData() || '[]'));
+				// 	window.location.href = target.toString();
+				// } else {
+				// 	navigator.clipboard
+				// 		.writeText(getExportData() || '[]')
+				// 		.then(() => {
+				// 			alert('Copied to clipboard!');
+				// 		})
+				// 		.catch((err) => {
+				// 			alert('Failed to copy to clipboard: ' + err);
+				// 		});
+				// }
 
-				const actionRows = findAll(ComponentType.ActionRow);
-
-				try {
-					actionRows.forEach((actionRow) => {
-						const children = actionRow.components ?? [];
-						if (children.length > 5) {
-							throw new Error('Action rows can only have 5 components');
-						} else if (children.length < 1) {
-							throw new Error('Action rows must have at least 1 component');
-						} else if (children.length > 1) {
-							if (children.filter((c) => c.type != 2).length > 1)
-								throw new Error('You can only have one select menu per action row');
-						}
-					});
-				} catch (e) {
-					if (validateExport) {
-						alert(e);
-						return;
-					} else {
-						console.warn(`Got error: ${e}, but continuing export due to no-validate flag`);
-					}
-				}
-
-				const buttons = findAll(ComponentType.Button);
-				try {
-					buttons.forEach((button) => {
-						if (button.style == 5) {
-							if (!button.url) throw new Error('Link buttons must have a url');
-							button.custom_id = undefined;
-						} else if (button.style != 5) {
-							if (!button.custom_id) throw new Error('Buttons must have a custom_id');
-							button.url = undefined;
-						}
-
-						if (button.emoji == '') {
-							button.emoji = null;
-						}
-					});
-				} catch (e) {
-					if (validateExport) {
-						alert(e);
-						return;
-					} else {
-						console.warn(`Got error: ${e}, but continuing export due to no-validate flag`);
-					}
-				}
-
-				let json = JSON.stringify([outputObject], null, 2);
-
-				if (!useBaseContainer) {
-					json = JSON.stringify(outputObject.components, null, 2);
-				}
-
-				if (minifyOutput || query.get('redir')) json = JSON.stringify(useBaseContainer ? [outputObject] : outputObject.components); // Encoding non minified json is a recipe for disaster
-
-				if (query.get('redir')) {
-					const targetUrl = query.get('redir');
-					const target = new URL(targetUrl ?? '');
-
-					target.searchParams.set('json', btoa(json));
-					window.location.href = target.toString();
-				} else {
-					navigator.clipboard
-						.writeText(json)
-						.then(() => {
-							alert('Copied to clipboard!');
-						})
-						.catch((err) => {
-							alert('Failed to copy to clipboard: ' + err);
-						});
-				}
+				exportModalOpen = true;
 			}}
 		>
 			<span class="button-icon">📋</span>
@@ -613,6 +658,7 @@
 					bind:checked={useBaseContainer}
 					label="Use Base Container"
 					description="Include a base container in the exported JSON."
+					disabled={lockedSettings.includes('use_base_container')}
 				/>
 				{#if useBaseContainer}
 				<ColorPicker 
@@ -640,6 +686,7 @@
 					label="Accent Color"
 					description="Choose a custom accent color for your components"
 					on:reset={handleAccentColorReset}
+					disabled={lockedSettings.includes('accent_color')}
 				/>
 				{/if}
 			</SettingGroup>
@@ -648,10 +695,11 @@
 				<ToggleSwitch
 					bind:checked={useFixedHeight}
 					label="Fixed Height Preview"
-					description="Enable to constrain the preview to a fixed height with scrolling. Disable for natural content flow. (Desktop only)"
+					description="Enable to constrain the preview to a fixed height with scrolling. Disable for natural content flow. (Returning soon)"
 					on:change={saveUseFixedHeight}
-					disabled={isMobile}
+					disabled={true}
 				/>
+				<!-- ^ currently broken -->
 			</SettingGroup>
 
 			<SettingGroup title="Export Options">
@@ -660,14 +708,92 @@
 					label="Minify Output"
 					description="Export JSON in compact format without indentation and whitespace."
 					on:change={saveMinifyOutput}
+					disabled={lockedSettings.includes('minify_output')}
 				/>
 				<ToggleSwitch
 					bind:checked={validateExport}
 					label="Validate on Export"
 					description="Enable validation checks when exporting. Disable to export even if there are issues."
 					on:change={saveValidateExport}
+					disabled={lockedSettings.includes('validate_export')}
 				/>
 			</SettingGroup>
+		</Modal>
+	{/if}
+
+	{#if exportModalOpen}
+		<Modal title={query.get('redir') ? 'Submit Components' : 'Export Components'} on:close={() => exportModalOpen = false}>
+			{#if query.get('redir')}
+				<ModalButton
+					label="Submit"
+					description="Submit the message to the target"
+					on:click={() => {
+						const targetUrl = query.get('redir');
+						const target = new URL(targetUrl ?? '');
+
+						target.searchParams.set('json', btoa(getExportData() || '[]'));
+						window.location.href = target.toString();
+					}}
+				/><br/>
+			{:else}
+				<ModalButton
+					label="Copy JSON"
+					description="Copy the exported JSON to clipboard"
+					on:click={() => {
+						navigator.clipboard
+							.writeText(getExportData() || '[]')
+							.then(() => {
+								alert('Copied to clipboard!');
+							})
+							.catch((err) => {
+								alert('Failed to copy to clipboard: ' + err);
+							});
+					}}
+				/><br/>
+			{/if}
+			{#if exportToURLShowOptions}
+			<ModalButton
+				label="Copy URL raw"
+				description="Send this exact page to someone."
+				on:click={() => {
+					const currentUrl = new URL(window.location.href);
+					currentUrl.searchParams.set('json', encodeURIComponent(getExportData() || '[]'));
+					navigator.clipboard.writeText(currentUrl.toString()).then(() => {
+						alert('URL copied to clipboard!');
+					});
+				}}
+			/><br/>
+			<ModalButton
+				label="Copy URL clean"
+				description="Send this page to someone, but without the target URL."
+				on:click={() => {
+					const currentUrl = new URL(window.location.href);
+					currentUrl.searchParams.delete('redir');
+					currentUrl.searchParams.set('json', encodeURIComponent(getExportData() || '[]'));
+					navigator.clipboard.writeText(currentUrl.toString()).then(() => {
+						alert('URL copied to clipboard!');
+					});
+				}}
+			/><br/>
+			{:else}
+			<ModalButton 
+				label="Copy link" 
+				description="Copy the link to this page with all the data filled in"
+				on:click={() => {
+					if (query.get('redir')) {
+						exportToURLShowOptions = true;
+					} else {
+						const currentUrl = new URL(window.location.href);
+						currentUrl.searchParams.set('json', encodeURIComponent(getExportData() || '[]'));
+						navigator.clipboard.writeText(currentUrl.toString()).then(() => {
+							alert('URL copied to clipboard!');
+						});
+					}
+				}}
+			/>
+			{/if}<br/>
+			<SettingGroup title="Preview" />
+			<Preview {useFixedHeight} {useBaseContainer} />
 		</Modal>
 	{/if}
 </header>
@@ -1755,5 +1881,10 @@
 			opacity: 1;
 			transform: scaleY(1.2);
 		}
+	}
+
+	/* Global style to prevent page overflow when fixed height preview is enabled */
+	:global(body.fixed-height-preview) {
+		overflow-y: hidden;
 	}
 </style>
