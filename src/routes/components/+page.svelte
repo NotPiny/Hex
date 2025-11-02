@@ -41,8 +41,6 @@
 		return JSON.stringify([outputObject], null, 2);
 	}
 
-	$: baseContainer = $components[0];
-
 	// Function to transform Discord API format to internal format
 	function transformDiscordToInternal(discordData: any): any {
 		if (Array.isArray(discordData)) {
@@ -143,6 +141,16 @@
 		return pastelColors[seed % pastelColors.length];
 	}
 
+	$: baseContainer = $components[0] || {
+		type: ComponentType.Container,
+		components: [],
+		hex_id: Math.floor(Math.random() * 1000000),
+		hex: {
+			id: Math.floor(Math.random() * 1000000),
+			color: generatePastelColor(Math.floor(Math.random() * 1000000))
+		}
+	};
+
 	const typeNames: Record<ComponentType, string> = {
 		[ComponentType.ActionRow]: 'Action Row',
 		[ComponentType.Button]: 'Button',
@@ -179,18 +187,20 @@
 	};
 
 	$: {
-		baseContainer.components = baseContainer.components.map((component) => {
-			if (component.type === ComponentType.TextDisplay) {
-				component.content = component.content ?? 'Enter text here...';
-			}
-			return component;
-		});
+		if (baseContainer && baseContainer.components) {
+			baseContainer.components = baseContainer.components.map((component) => {
+				if (component.type === ComponentType.TextDisplay) {
+					component.content = component.content ?? 'Enter text here...';
+				}
+				return component;
+			});
 
-		// Only update the store, don't call ensureHexIds here
-		components.update((c) => {
-			c[0] = baseContainer;
-			return c;
-		});
+			// Only update the store, don't call ensureHexIds here
+			components.update((c) => {
+				c[0] = baseContainer;
+				return c;
+			});
+		}
 	}
 
 	export let disableExport = false; // If being embedded in another page using svelte components you can just pull the components store directly
@@ -217,8 +227,26 @@
 					// Decode the URI component first before parsing JSON
 					const decodedJson = decodeURIComponent(json);
 					const parsed = JSON.parse(decodedJson);
+					
+					// If parsed is an array, wrap it in a container structure
+					let dataToImport;
+					if (Array.isArray(parsed)) {
+						const hexId = Math.floor(Math.random() * 1000000);
+						dataToImport = [{
+							type: ComponentType.Container,
+							components: parsed,
+							hex_id: hexId,
+							hex: {
+								id: hexId,
+								color: generatePastelColor(hexId)
+							}
+						}];
+					} else {
+						dataToImport = parsed;
+					}
+					
 					// Transform Discord format to internal format
-					const transformed = transformDiscordToInternal(parsed);
+					const transformed = transformDiscordToInternal(dataToImport);
 					const withHexIds = ensureHexIds(transformed);
 					components.set(withHexIds);
 				} catch (e) {
@@ -594,14 +622,33 @@
 				if (jsonInput) {
 					try {
 						const parsed = JSON.parse(jsonInput);
-						if (Array.isArray(parsed) && parsed.length > 0) {
-							// Transform Discord format to internal format
-							const transformed = transformDiscordToInternal(parsed);
-							const withHexIds = ensureHexIds(transformed);
-							components.set(withHexIds);
+						
+						// Handle both array and container structures
+						let dataToImport;
+						if (Array.isArray(parsed)) {
+							// If it's an array, wrap it in a container structure
+							const hexId = Math.floor(Math.random() * 1000000);
+							dataToImport = [{
+								type: ComponentType.Container,
+								components: parsed,
+								hex_id: hexId,
+								hex: {
+									id: hexId,
+									color: generatePastelColor(hexId)
+								}
+							}];
+						} else if (parsed && typeof parsed === 'object') {
+							// If it's already a container structure, use it as is
+							dataToImport = parsed;
 						} else {
-							alert('Invalid JSON format. Please provide a valid array of components.');
+							alert('Invalid JSON format. Please provide a valid array of components or container structure.');
+							return;
 						}
+						
+						// Transform Discord format to internal format
+						const transformed = transformDiscordToInternal(dataToImport);
+						const withHexIds = ensureHexIds(transformed);
+						components.set(withHexIds);
 					} catch (e) {
 						alert('Failed to parse JSON: ' + e);
 					}
@@ -731,7 +778,7 @@
 						const targetUrl = query.get('redir');
 						const target = new URL(targetUrl ?? '');
 
-						target.searchParams.set('json', btoa(getExportData() || '[]'));
+						target.searchParams.set('json', encodeURIComponent(getExportData() || '[]'));
 						window.location.href = target.toString();
 					}}
 				/><br/>
