@@ -186,19 +186,16 @@
 		[ComponentType.Container]: 'A container for other components'
 	};
 
+	// Note: This reactive block is intentionally limited to avoid circular dependencies
+	// It only ensures TextDisplay components have default content, but doesn't update the store
 	$: {
 		if (baseContainer && baseContainer.components) {
-			baseContainer.components = baseContainer.components.map((component) => {
-				if (component.type === ComponentType.TextDisplay) {
-					component.content = component.content ?? 'Enter text here...';
+			// Only set default content for TextDisplay components if missing
+			// Don't update the store here to avoid circular reactivity
+			baseContainer.components.forEach((component) => {
+				if (component.type === ComponentType.TextDisplay && !component.content) {
+					component.content = 'Enter text here...';
 				}
-				return component;
-			});
-
-			// Only update the store, don't call ensureHexIds here
-			components.update((c) => {
-				c[0] = baseContainer;
-				return c;
 			});
 		}
 	}
@@ -256,8 +253,6 @@
 							// Regular URL-encoded JSON
 							jsonData = decodeURIComponent(fragmentData);
 						}
-						// Clear the hash after loading to clean up URL
-						history.replaceState(null, '', window.location.pathname + window.location.search);
 					} catch (e) {
 						console.error('Failed to parse data from hash:', e);
 					}
