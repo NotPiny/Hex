@@ -1519,9 +1519,7 @@
 	.content div {
 		border-radius: 40px;
 		background-color: #1c1d20;
-		padding: 20px;
-		padding-left: 40px;
-		padding-right: 40px;
+		padding: 20px 10px;
 		box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
 		box-sizing: border-box;
 	}
@@ -1535,9 +1533,7 @@
 		
 		.content div {
 			border-radius: 20px;
-			padding: 15px;
-			padding-left: 20px;
-			padding-right: 20px;
+			padding: 15px 10px;
 			overflow-x: hidden;
 			overflow-y: auto;
 		}
@@ -1555,9 +1551,7 @@
 		}
 		
 		.content div {
-			padding: 30px;
-			padding-left: 50px;
-			padding-right: 50px;
+			padding: 30px 10px;
 		}
 	}
 

@@ -310,7 +310,7 @@
 		background-color: #1c1d20;
 		border-radius: 20px;
 		gap: 1rem;
-		padding: 20px;
+		padding: 5px;
 		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
 		position: relative;
 	}
@@ -440,7 +440,7 @@
 		box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.7);
 		display: flex;
 		flex-direction: column;
-
+		padding: 5px;
 		justify-content: start;
 		gap: 10px;
 
@@ -456,7 +456,7 @@
 	}
 
 	.content {
-		width: 90%;
+		width: 100%;
 		user-select: text; /* Allow text selection in content area */
 	}
 
