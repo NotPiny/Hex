@@ -220,13 +220,66 @@
 	const query = simulatedSearch ? new URLSearchParams(simulatedSearch) : page.url.searchParams;
 
 	onMount(() => {
-		if (query.get('json')) {
-			const json = query.get('json');
-			if (json) {
+		// Handle async data loading
+		(async () => {
+			let jsonData = null;
+			
+			// Check for data in URL fragment (PRIMARY METHOD for cross-origin)
+			if (browser && window.location.hash) {
+				const hash = window.location.hash.substring(1); // Remove the #
+				const hashParams = new URLSearchParams(hash);
+				const fragmentData = hashParams.get('json');
+				
+				if (fragmentData) {
+					try {
+						// Check if data is compressed (prefixed with 'gz:')
+						if (fragmentData.startsWith('gz:')) {
+							// Decompress the data
+							const compressedData = fragmentData.substring(3); // Remove 'gz:' prefix
+							if (typeof DecompressionStream !== 'undefined') {
+								const binary = atob(compressedData);
+								const bytes = new Uint8Array(binary.length);
+								for (let i = 0; i < binary.length; i++) {
+									bytes[i] = binary.charCodeAt(i);
+								}
+								
+								const stream = new DecompressionStream('gzip');
+								const writer = stream.writable.getWriter();
+								writer.write(bytes);
+								writer.close();
+								
+								jsonData = await new Response(stream.readable).text();
+							} else {
+								console.error('DecompressionStream not supported');
+							}
+						} else {
+							// Regular URL-encoded JSON
+							jsonData = decodeURIComponent(fragmentData);
+						}
+						// Clear the hash after loading to clean up URL
+						history.replaceState(null, '', window.location.pathname + window.location.search);
+					} catch (e) {
+						console.error('Failed to parse data from hash:', e);
+					}
+				}
+			}
+			
+			// Check for json query parameter - FALLBACK METHOD
+			if (!jsonData && query.get('json')) {
+				const json = query.get('json');
+				if (json) {
+					try {
+						jsonData = decodeURIComponent(json);
+					} catch (e) {
+						console.error('Failed to decode JSON parameter:', e);
+					}
+				}
+			}
+			
+			// Process the JSON data if we have it
+			if (jsonData) {
 				try {
-					// Decode the URI component first before parsing JSON
-					const decodedJson = decodeURIComponent(json);
-					const parsed = JSON.parse(decodedJson);
+					const parsed = JSON.parse(jsonData);
 					
 					// If parsed is an array, wrap it in a container structure
 					let dataToImport;
@@ -253,7 +306,7 @@
 					alert('Failed to parse JSON: ' + e);
 				}
 			}
-		}
+		})();
 
 		// Add keyboard shortcut for easy JSON access (Ctrl+J or Cmd+J)
 		function handleKeydown(e: KeyboardEvent) {
@@ -271,7 +324,9 @@
 
 		if (browser) {
 			window.addEventListener('keydown', handleKeydown);
-			return () => window.removeEventListener('keydown', handleKeydown);
+			return () => {
+				window.removeEventListener('keydown', handleKeydown);
+			};
 		}
 	});
 
@@ -774,11 +829,39 @@
 				<ModalButton
 					label="Submit"
 					description="Submit the message to the target"
-					on:click={() => {
+					on:click={async () => {
+						const exportData = getExportData() || '[]';
 						const targetUrl = query.get('redir');
 						const target = new URL(targetUrl ?? '');
-
-						target.searchParams.set('json', encodeURIComponent(getExportData() || '[]'));
+						
+						// Try URL-encoded JSON in fragment first
+						const encoded = encodeURIComponent(exportData);
+						
+						// Check if we need compression (if encoded data is too large)
+						// Fragment has no hard limit but keep it reasonable
+						if (encoded.length > 50000 && typeof CompressionStream !== 'undefined') {
+							// Use compression with prefix signal
+							try {
+								const stream = new CompressionStream('gzip');
+								const writer = stream.writable.getWriter();
+								const encoder = new TextEncoder();
+								
+								writer.write(encoder.encode(exportData));
+								writer.close();
+								
+								const compressed = await new Response(stream.readable).arrayBuffer();
+								const base64 = btoa(String.fromCharCode(...new Uint8Array(compressed)));
+								// Prefix with 'gz:' to signal compression
+								target.hash = 'json=gz:' + base64;
+								window.location.href = target.toString();
+								return;
+							} catch (e) {
+								console.error('Compression failed:', e);
+							}
+						}
+						
+						// Use regular URL-encoded JSON in fragment
+						target.hash = 'json=' + encoded;
 						window.location.href = target.toString();
 					}}
 				/><br/>
